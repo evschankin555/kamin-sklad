@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="f4f67cb9-fc42-4862-99e6-a999e6c17ab3" name="kamin-sklad">
+        <fileTransfer rootFolder="/home/httpd/vhosts/kamin-sklad.ru/httpdocs" accessType="SFTP" host="a217442.ftp.mchost.ru" port="22" sshConfigId="17904eb3-bd68-4337-b418-969e055f8913" sshConfig="a217442_kami194@a217442.ftp.mchost.ru:22 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" keepAliveTimeout="0" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

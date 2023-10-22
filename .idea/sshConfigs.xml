@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SshConfigs">
+    <configs>
+      <sshConfig authType="PASSWORD" host="a217442.ftp.mchost.ru" id="17904eb3-bd68-4337-b418-969e055f8913" port="22" nameFormat="DESCRIPTIVE" username="a217442_kami194" useOpenSSHConfig="true" />
+    </configs>
+  </component>
+</project>
