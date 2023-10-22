@@ -54,11 +54,11 @@ return array (
     'readonly' => true,
   ),
 
-  /*'cache' => array(
+  'cache' => array(
       'value' => array(
           'type' => array('class_name' => '\\Bitrix\\Main\\Data\\CacheEngineFiles',),
           'sid' => $_SERVER["DOCUMENT_ROOT"]."#01"
       ),
-  ),*/
+  ),
 
 );

@@ -198,11 +198,6 @@ $detect = new \Bitrix\Conversion\Internals\MobileDetect;
 			</div>
 		</footer>
 
-<!-- ВИДЖЕТ ОБРАТНОГО ЗВОНКА:{literal}-->
-
-<link rel="stylesheet" href="https://cdn.envybox.io/widget/cbk.css">
-<script type="text/javascript" src="https://cdn.envybox.io/widget/cbk.js?wcb_code=37a237c0b75b9b1ae956ef89ee7a9cac" charset="UTF-8" async></script>
-<!-----------------------------{/literal}-->
 
 
 <?
@@ -240,6 +235,13 @@ print_r("</pre>-->");
     ),
     false
 );?>
+<link rel="preload" href="<?=CMain::IsHTTPS() ? 'https' : 'http'?>://fonts.googleapis.com/css?family=Ubuntu:400,500,700,400italic&subset=latin,cyrillic" as="style">
+<link href="<?=CMain::IsHTTPS() ? 'https' : 'http'?>://fonts.googleapis.com/css?family=Ubuntu:400,500,700,400italic&subset=latin,cyrillic" rel="stylesheet" type="text/css" media="print" onload="this.media='all'">
+<!-- ВИДЖЕТ ОБРАТНОГО ЗВОНКА:{literal}-->
+
+<link rel="stylesheet" href="https://cdn.envybox.io/widget/cbk.css">
+<script type="text/javascript" src="https://cdn.envybox.io/widget/cbk.js?wcb_code=37a237c0b75b9b1ae956ef89ee7a9cac" charset="UTF-8" async></script>
+<!-----------------------------{/literal}-->
 
 	</body>
 <!-- mch -->

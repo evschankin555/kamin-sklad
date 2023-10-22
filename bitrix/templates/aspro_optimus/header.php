@@ -32,22 +32,15 @@ require_once("include_area/location-session.php");
 	<?$APPLICATION->AddHeadString('<script>BX.message('.CUtil::PhpToJSObject( $MESS, false ).')</script>', true);?>
 	<?if(CModule::IncludeModule("aspro.optimus")) {COptimus::Start(SITE_ID);}?>
 	<!--[if gte IE 9]><style type="text/css">.basket_button, .button30, .icon {filter: none;}</style><![endif]-->
-	<link href='<?=CMain::IsHTTPS() ? 'https' : 'http'?>://fonts.googleapis.com/css?family=Ubuntu:400,500,700,400italic&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
 <?
-$APPLICATION->SetAdditionalCSS(SITE_TEMPLATE_PATH.'/js/fancybox/helpers/jquery.fancybox-buttons.css', true);
-$APPLICATION->SetAdditionalCSS(SITE_TEMPLATE_PATH.'/js/fancybox/helpers/jquery.fancybox-thumbs.css', true);
-$APPLICATION->AddHeadScript(SITE_TEMPLATE_PATH.'/js/fancybox/jquery.fancybox.pack.js');
-$APPLICATION->AddHeadScript(SITE_TEMPLATE_PATH.'/js/fancybox/helpers/jquery.fancybox-buttons.js');
-$APPLICATION->AddHeadScript(SITE_TEMPLATE_PATH.'/js/fancybox/helpers/jquery.fancybox-media.js');
-$APPLICATION->AddHeadScript(SITE_TEMPLATE_PATH.'/js/fancybox/helpers/jquery.fancybox-thumbs.js');
-$APPLICATION->AddHeadScript(SITE_TEMPLATE_PATH.'/js/velocity.min.js');
+
 $current_region_id = $_SESSION['CURRENT_LOCATION']['CURRENT']['ID'];
   ?>
 
 <meta name="cmsmagazine" content="8b8f98ba6e95d71cf42e9faa2011c4a5" />
 <meta name="robots" content="noyaca"/>
 
-#WF_META#
+
 
 </head>
 	<body id="main">
