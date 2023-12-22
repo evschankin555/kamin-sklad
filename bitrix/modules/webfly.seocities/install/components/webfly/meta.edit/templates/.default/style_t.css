@@ -1,0 +1,49 @@
+div#wfSeoEditFormContainer{
+    display: none;
+}
+
+form#wfSeoEditForm{
+    padding: 10px;
+    text-align: center;
+}
+
+#wfSeoEditForm input {
+    margin: 5px 0 7px;
+    text-align: center;
+    width: 90%;
+}
+
+#wfSeoEditForm textarea {
+    width: 90%;
+}
+
+#popup-window-titlebar-wfSeoEditPopup {
+    margin: 0 auto;
+    position: relative;
+    top: 7px;
+    width: 90%;
+}
+
+#wfSeoEditLink{
+    position: fixed;
+    left:0;
+    bottom: 20px;
+    padding: 10px;
+    font-size: 14px;
+    background: #f53351;
+    color:white;
+    box-shadow: 0 2px 3px rgba(0,0,0,0.5);
+    z-index:500;
+    border-bottom:none;
+}
+#popup-window-content-wfSeoEditPopup{
+    width: 600px;
+}
+#wfsave, #wfsavetoadmin
+{
+   width:250px !important; 
+}
+#wfsave
+{
+  margin-right:20px !important;
+}

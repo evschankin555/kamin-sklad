@@ -24,6 +24,10 @@ $detect = new \Bitrix\Conversion\Internals\MobileDetect;
 							"AREA_FILE_SHOW" => "file",
 							"AREA_FILE_SUFFIX" => "",
 							"AREA_FILE_RECURSIVE" => "Y",
+                            "CACHE_TYPE" => "Y",
+                            "CACHE_TIME" => "36000000",
+                            "CACHE_FILTER" => "Y",
+                            "CACHE_GROUPS" => "N",
 							"EDIT_TEMPLATE" => "standard.php"
 						),
 						false
@@ -40,6 +44,10 @@ $detect = new \Bitrix\Conversion\Internals\MobileDetect;
 									"AREA_FILE_SHOW" => "file",
 									"AREA_FILE_SUFFIX" => "",
 									"AREA_FILE_RECURSIVE" => "Y",
+                                    "CACHE_TYPE" => "Y",
+                                    "CACHE_TIME" => "36000000",
+                                    "CACHE_FILTER" => "Y",
+                                    "CACHE_GROUPS" => "N",
 									"EDIT_TEMPLATE" => "standard.php"
 								),
 								false
@@ -54,7 +62,7 @@ $detect = new \Bitrix\Conversion\Internals\MobileDetect;
 										<?$APPLICATION->IncludeComponent("bitrix:menu", "bottom_submenu_top", array(
 											"ROOT_MENU_TYPE" => "bottom",
 											"MENU_CACHE_TYPE" => "Y",
-											"MENU_CACHE_TIME" => "3600000",
+											"MENU_CACHE_TIME" => "36000000",
 											"MENU_CACHE_USE_GROUPS" => "N",
 											"MENU_CACHE_GET_VARS" => array(),
 											"MAX_LEVEL" => "1",
@@ -70,7 +78,7 @@ $detect = new \Bitrix\Conversion\Internals\MobileDetect;
 												<?$APPLICATION->IncludeComponent("bitrix:menu", "bottom_submenu", array(
 													"ROOT_MENU_TYPE" => "bottom_company",
 													"MENU_CACHE_TYPE" => "Y",
-													"MENU_CACHE_TIME" => "3600000",
+													"MENU_CACHE_TIME" => "36000000",
 													"MENU_CACHE_USE_GROUPS" => "N",
 													"MENU_CACHE_GET_VARS" => array(),
 													"MAX_LEVEL" => "1",
@@ -86,7 +94,7 @@ $detect = new \Bitrix\Conversion\Internals\MobileDetect;
 												<?$APPLICATION->IncludeComponent("bitrix:menu", "bottom_submenu", array(
 													"ROOT_MENU_TYPE" => "bottom_info",
 													"MENU_CACHE_TYPE" => "Y",
-													"MENU_CACHE_TIME" => "3600000",
+													"MENU_CACHE_TIME" => "36000000",
 													"MENU_CACHE_USE_GROUPS" => "N",
 													"MENU_CACHE_GET_VARS" => array(),
 													"MAX_LEVEL" => "1",
@@ -102,7 +110,7 @@ $detect = new \Bitrix\Conversion\Internals\MobileDetect;
 												<?$APPLICATION->IncludeComponent("bitrix:menu", "bottom_submenu", array(
 													"ROOT_MENU_TYPE" => "bottom_help",
 													"MENU_CACHE_TYPE" => "Y",
-													"MENU_CACHE_TIME" => "3600000",
+													"MENU_CACHE_TIME" => "36000000",
 													"MENU_CACHE_USE_GROUPS" => "N",
 													"MENU_CACHE_GET_VARS" => array(),
 													"MAX_LEVEL" => "1",
@@ -122,6 +130,10 @@ $detect = new \Bitrix\Conversion\Internals\MobileDetect;
                                                             "AREA_FILE_SHOW" => "file",
                                                             "AREA_FILE_SUFFIX" => "",
                                                             "AREA_FILE_RECURSIVE" => "Y",
+                                                            "CACHE_TYPE" => "Y",
+                                                            "CACHE_TIME" => "36000000",
+                                                            "CACHE_FILTER" => "Y",
+                                                            "CACHE_GROUPS" => "N",
                                                             "EDIT_TEMPLATE" => "standard.php"
                                                         ),
                                                         false
@@ -145,6 +157,10 @@ $detect = new \Bitrix\Conversion\Internals\MobileDetect;
 																	"AREA_FILE_SHOW" => "file",
 																	"AREA_FILE_SUFFIX" => "",
 																	"AREA_FILE_RECURSIVE" => "Y",
+                                                                    "CACHE_TYPE" => "Y",
+                                                                    "CACHE_TIME" => "36000000",
+                                                                    "CACHE_FILTER" => "Y",
+                                                                    "CACHE_GROUPS" => "N",
 																	"EDIT_TEMPLATE" => "standard.php"
 																),
 																false
@@ -165,6 +181,10 @@ $detect = new \Bitrix\Conversion\Internals\MobileDetect;
 															"AREA_FILE_SHOW" => "file",
 															"AREA_FILE_SUFFIX" => "",
 															"AREA_FILE_RECURSIVE" => "Y",
+                                                            "CACHE_TYPE" => "Y",
+                                                            "CACHE_TIME" => "36000000",
+                                                            "CACHE_FILTER" => "Y",
+                                                            "CACHE_GROUPS" => "N",
 															"EDIT_TEMPLATE" => "standard.php"
 														),
 														false
@@ -187,6 +207,10 @@ $detect = new \Bitrix\Conversion\Internals\MobileDetect;
 								"AREA_FILE_SHOW" => "file",
 								"AREA_FILE_SUFFIX" => "",
 								"AREA_FILE_RECURSIVE" => "Y",
+                                "CACHE_TYPE" => "Y",
+                                "CACHE_TIME" => "36000000",
+                                "CACHE_FILTER" => "Y",
+                                "CACHE_GROUPS" => "N",
 								"EDIT_TEMPLATE" => "standard.php"
 							),
 							false
@@ -198,6 +222,11 @@ $detect = new \Bitrix\Conversion\Internals\MobileDetect;
 			</div>
 		</footer>
 
+<!-- ВИДЖЕТ ОБРАТНОГО ЗВОНКА:{literal}-->
+
+<link rel="stylesheet" href="https://cdn.envybox.io/widget/cbk.css" async>
+<script type="text/javascript" src="https://cdn.envybox.io/widget/cbk.js?wcb_code=37a237c0b75b9b1ae956ef89ee7a9cac" charset="UTF-8" async></script>
+<!-----------------------------{/literal}-->
 
 
 <?
@@ -224,24 +253,17 @@ print_r("</pre>-->");
 <div style="display:none">
 #WF_COUNT#
 </div>
-<?$APPLICATION->IncludeComponent( "abricos:antisovetnik", "", array(), false);?> 
+<?$APPLICATION->IncludeComponent( "abricos:antisovetnik", "", array(), false);?>
 <?$APPLICATION->IncludeComponent(
-    "webfly:meta.edit", 
-    ".default", 
+    "webfly:meta.edit",
+    ".default",
     array(
-        "CACHE_TYPE" => "A",
+        "CACHE_TYPE" => "Y",
         "CACHE_TIME" => "3600",
         "WF_JQUERY" => "N"
     ),
     false
 );?>
-<link rel="preload" href="<?=CMain::IsHTTPS() ? 'https' : 'http'?>://fonts.googleapis.com/css?family=Ubuntu:400,500,700,400italic&subset=latin,cyrillic" as="style">
-<link href="<?=CMain::IsHTTPS() ? 'https' : 'http'?>://fonts.googleapis.com/css?family=Ubuntu:400,500,700,400italic&subset=latin,cyrillic" rel="stylesheet" type="text/css" media="print" onload="this.media='all'">
-<!-- ВИДЖЕТ ОБРАТНОГО ЗВОНКА:{literal}-->
-
-<link rel="stylesheet" href="https://cdn.envybox.io/widget/cbk.css">
-<script type="text/javascript" src="https://cdn.envybox.io/widget/cbk.js?wcb_code=37a237c0b75b9b1ae956ef89ee7a9cac" charset="UTF-8" async></script>
-<!-----------------------------{/literal}-->
 
 	</body>
 <!-- mch -->

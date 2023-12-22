@@ -1,0 +1,1 @@
+&copy; <?=date("Y")?> Все права защищены.<br />Камины - интернет-магазин <?=$_SESSION['CURRENT_LOCATION']['CURRENT']["NAME"]?>

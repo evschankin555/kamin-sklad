@@ -12,13 +12,7 @@ require_once("include/func.php");
 <!DOCTYPE html>
 <html xml:lang="<?=LANGUAGE_ID?>" lang="<?=LANGUAGE_ID?>" xmlns="http://www.w3.org/1999/xhtml" <?=($htmlClass ? 'class="'.$htmlClass.'"' : '')?> itemscope itemtype="https://schema.org/WebSite">
 <head>
-<!-- Google Tag Manager -->
-<script data-skip-moving="true">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-MHGFWH2');</script>
-<!-- End Google Tag Manager -->
+
 <?
 require_once("include_area/location-session.php");
 ?>
@@ -32,6 +26,7 @@ require_once("include_area/location-session.php");
 	<?$APPLICATION->AddHeadString('<script>BX.message('.CUtil::PhpToJSObject( $MESS, false ).')</script>', true);?>
 	<?if(CModule::IncludeModule("aspro.optimus")) {COptimus::Start(SITE_ID);}?>
 	<!--[if gte IE 9]><style type="text/css">.basket_button, .button30, .icon {filter: none;}</style><![endif]-->
+    <link preload rel="stylesheet" href="<?=CMain::IsHTTPS() ? 'https' : 'http'?>://fonts.googleapis.com/css?family=Ubuntu:400,500,700,400italic&subset=latin,cyrillic&display=swap" type="text/css">
 <?
 
 $current_region_id = $_SESSION['CURRENT_LOCATION']['CURRENT']['ID'];
@@ -39,7 +34,6 @@ $current_region_id = $_SESSION['CURRENT_LOCATION']['CURRENT']['ID'];
 
 <meta name="cmsmagazine" content="8b8f98ba6e95d71cf42e9faa2011c4a5" />
 <meta name="robots" content="noyaca"/>
-
 
 
 </head>
@@ -66,6 +60,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 											"AREA_FILE_SHOW" => "file",
 											"AREA_FILE_SUFFIX" => "",
 											"AREA_FILE_RECURSIVE" => "Y",
+                                            "CACHE_TYPE" => "Y",
+                                            "CACHE_TIME" => "36000000",
+                                            "CACHE_FILTER" => "Y",
+                                            "CACHE_GROUPS" => "N",
 											"EDIT_TEMPLATE" => "standard.php"
 										),
 										false
@@ -83,6 +81,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 														"AREA_FILE_SHOW" => "file",
 														"AREA_FILE_SUFFIX" => "",
 														"AREA_FILE_RECURSIVE" => "Y",
+                                                        "CACHE_TYPE" => "Y",
+                                                        "CACHE_TIME" => "36000000",
+                                                        "CACHE_FILTER" => "Y",
+                                                        "CACHE_GROUPS" => "N",
 														"EDIT_TEMPLATE" => "standard.php"
 													),
 													false
@@ -117,6 +119,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 											"AREA_FILE_SHOW" => "file",
 											"AREA_FILE_SUFFIX" => "",
 											"AREA_FILE_RECURSIVE" => "Y",
+                                            "CACHE_TYPE" => "Y",
+                                            "CACHE_TIME" => "36000000",
+                                            "CACHE_FILTER" => "Y",
+                                            "CACHE_GROUPS" => "N",
 											"EDIT_TEMPLATE" => "standard.php"
 										),
 										false
@@ -171,6 +177,10 @@ if ($USER->IsAdmin() || in_array(10, $USER->GetUserGroupArray())) {
 												"AREA_FILE_SHOW" => "file",
 												"AREA_FILE_SUFFIX" => "",
 												"AREA_FILE_RECURSIVE" => "Y",
+                                                "CACHE_TYPE" => "Y",
+                                                "CACHE_TIME" => "36000000",
+                                                "CACHE_FILTER" => "Y",
+                                                "CACHE_GROUPS" => "N",
 												"EDIT_TEMPLATE" => "standard.php"
 											),
 											false
@@ -195,6 +205,10 @@ if ($USER->IsAdmin()) {
 												"AREA_FILE_SHOW" => "file",
 												"AREA_FILE_SUFFIX" => "",
 												"AREA_FILE_RECURSIVE" => "Y",
+                                                "CACHE_TYPE" => "Y",
+                                                "CACHE_TIME" => "36000000",
+                                                "CACHE_FILTER" => "Y",
+                                                "CACHE_GROUPS" => "N",
 												"EDIT_TEMPLATE" => "standard.php"
 											),
 											false
@@ -213,6 +227,10 @@ if ($USER->IsAdmin()) {
 														"AREA_FILE_SHOW" => "file",
 														"AREA_FILE_SUFFIX" => "",
 														"AREA_FILE_RECURSIVE" => "Y",
+                                                        "CACHE_TYPE" => "Y",
+                                                        "CACHE_TIME" => "36000000",
+                                                        "CACHE_FILTER" => "Y",
+                                                        "CACHE_GROUPS" => "N",
 														"EDIT_TEMPLATE" => "standard.php"
 													),
 													false
@@ -226,6 +244,10 @@ if ($USER->IsAdmin()) {
 														"AREA_FILE_SHOW" => "file",
 														"AREA_FILE_SUFFIX" => "",
 														"AREA_FILE_RECURSIVE" => "Y",
+                                                        "CACHE_TYPE" => "Y",
+                                                        "CACHE_TIME" => "36000000",
+                                                        "CACHE_FILTER" => "Y",
+                                                        "CACHE_GROUPS" => "N",
 														"EDIT_TEMPLATE" => "standard.php"
 													),
 													false
@@ -241,6 +263,10 @@ if ($USER->IsAdmin()) {
 													"AREA_FILE_SHOW" => "file",
 													"AREA_FILE_SUFFIX" => "",
 													"AREA_FILE_RECURSIVE" => "Y",
+                                                    "CACHE_TYPE" => "Y",
+                                                    "CACHE_TIME" => "36000000",
+                                                    "CACHE_FILTER" => "Y",
+                                                    "CACHE_GROUPS" => "N",
 													"EDIT_TEMPLATE" => "standard.php"
 												),
 												false
@@ -261,6 +287,10 @@ if ($USER->IsAdmin()) {
 																	"AREA_FILE_SHOW" => "file",
 																	"AREA_FILE_SUFFIX" => "",
 																	"AREA_FILE_RECURSIVE" => "Y",
+                                                                    "CACHE_TYPE" => "Y",
+                                                                    "CACHE_TIME" => "36000000",
+                                                                    "CACHE_FILTER" => "Y",
+                                                                    "CACHE_GROUPS" => "N",
 																	"EDIT_TEMPLATE" => "standard.php"
 																),
 																false
@@ -308,6 +338,10 @@ if ($USER->IsAdmin()) {
 													"AREA_FILE_SHOW" => "file",
 													"AREA_FILE_SUFFIX" => "",
 													"AREA_FILE_RECURSIVE" => "Y",
+                                                    "CACHE_TYPE" => "Y",
+                                                    "CACHE_TIME" => "36000000",
+                                                    "CACHE_FILTER" => "Y",
+                                                    "CACHE_GROUPS" => "N",
 													"EDIT_TEMPLATE" => "standard.php"
 												),
 												false
@@ -323,6 +357,10 @@ if ($USER->IsAdmin()) {
 											"AREA_FILE_SHOW" => "file",
 											"AREA_FILE_SUFFIX" => "",
 											"AREA_FILE_RECURSIVE" => "Y",
+                                            "CACHE_TYPE" => "Y",
+                                            "CACHE_TIME" => "36000000",
+                                            "CACHE_FILTER" => "Y",
+                                            "CACHE_GROUPS" => "N",
 											"EDIT_TEMPLATE" => "standard.php"
 										),
 										false
@@ -336,6 +374,10 @@ if ($USER->IsAdmin()) {
 											"AREA_FILE_SHOW" => "file",
 											"AREA_FILE_SUFFIX" => "",
 											"AREA_FILE_RECURSIVE" => "Y",
+                                            "CACHE_TYPE" => "Y",
+                                            "CACHE_TIME" => "36000000",
+                                            "CACHE_FILTER" => "Y",
+                                            "CACHE_GROUPS" => "N",
 											"EDIT_TEMPLATE" => "standard.php"
 										),
 										false
@@ -352,6 +394,18 @@ if ($USER->IsAdmin()) {
 
 					<?if(!COptimus::IsOrderPage() && !COptimus::IsBasketPage() && $_SESSION['CURRENT_LOCATION']['CURRENT']['PAGE']!="Y"){?>
 						<div class="left_block">
+<style>
+    .catalog-left{
+        height: 480px;
+        display: block;
+        margin-bottom: 15px;
+    }
+    header .menu_top_block li.catalog>.dropdown{
+        display: block!important;
+        margin-top: 15px;
+    }
+</style>
+                            <div class="catalog-left"></div>
 							<?$APPLICATION->IncludeComponent("bitrix:main.include", ".default",
 								array(
 									"COMPONENT_TEMPLATE" => ".default",
@@ -359,6 +413,10 @@ if ($USER->IsAdmin()) {
 									"AREA_FILE_SHOW" => "file",
 									"AREA_FILE_SUFFIX" => "",
 									"AREA_FILE_RECURSIVE" => "Y",
+                                    "CACHE_TYPE" => "Y",
+                                    "CACHE_TIME" => "36000000",
+                                    "CACHE_FILTER" => "Y",
+                                    "CACHE_GROUPS" => "N",
 									"EDIT_TEMPLATE" => "standard.php"
 								),
 								false
@@ -373,6 +431,10 @@ if ($USER->IsAdmin()) {
 									"AREA_FILE_SHOW" => "file",
 									"AREA_FILE_SUFFIX" => "",
 									"AREA_FILE_RECURSIVE" => "Y",
+                                    "CACHE_TYPE" => "Y",
+                                    "CACHE_TIME" => "36000000",
+                                    "CACHE_FILTER" => "Y",
+                                    "CACHE_GROUPS" => "N",
 									"EDIT_TEMPLATE" => "standard.php"
 								),
 								false
@@ -384,6 +446,10 @@ if ($USER->IsAdmin()) {
 									"AREA_FILE_SHOW" => "file",
 									"AREA_FILE_SUFFIX" => "",
 									"AREA_FILE_RECURSIVE" => "Y",
+                                    "CACHE_TYPE" => "Y",
+                                    "CACHE_TIME" => "36000000",
+                                    "CACHE_FILTER" => "Y",
+                                    "CACHE_GROUPS" => "N",
 									"EDIT_TEMPLATE" => "standard.php"
 								),
 								false
@@ -397,6 +463,10 @@ if ($USER->IsAdmin()) {
 									"AREA_FILE_SHOW" => "file",
 									"AREA_FILE_SUFFIX" => "",
 									"AREA_FILE_RECURSIVE" => "Y",
+                                    "CACHE_TYPE" => "Y",
+                                    "CACHE_TIME" => "36000000",
+                                    "CACHE_FILTER" => "Y",
+                                    "CACHE_GROUPS" => "N",
 									"EDIT_TEMPLATE" => "standard.php"
 								),
 								false
@@ -410,6 +480,10 @@ if ($USER->IsAdmin()) {
 									"AREA_FILE_SHOW" => "file",
 									"AREA_FILE_SUFFIX" => "",
 									"AREA_FILE_RECURSIVE" => "Y",
+                                    "CACHE_TYPE" => "Y",
+                                    "CACHE_TIME" => "36000000",
+                                    "CACHE_FILTER" => "Y",
+                                    "CACHE_GROUPS" => "N",
 									"EDIT_TEMPLATE" => "standard.php"
 								),
 								false
@@ -423,6 +497,10 @@ if ($USER->IsAdmin()) {
 									"AREA_FILE_SHOW" => "file",
 									"AREA_FILE_SUFFIX" => "",
 									"AREA_FILE_RECURSIVE" => "Y",
+                                    "CACHE_TYPE" => "Y",
+                                    "CACHE_TIME" => "36000000",
+                                    "CACHE_FILTER" => "Y",
+                                    "CACHE_GROUPS" => "N",
 									"EDIT_TEMPLATE" => "standard.php"
 								),
 								false
@@ -437,6 +515,10 @@ if ($USER->IsAdmin()) {
 									"AREA_FILE_SHOW" => "file",
 									"AREA_FILE_SUFFIX" => "",
 									"AREA_FILE_RECURSIVE" => "Y",
+                                    "CACHE_TYPE" => "Y",
+                                    "CACHE_TIME" => "36000000",
+                                    "CACHE_FILTER" => "Y",
+                                    "CACHE_GROUPS" => "N",
 									"EDIT_TEMPLATE" => "standard.php"
 								),
 								false
@@ -451,6 +533,10 @@ if ($USER->IsAdmin()) {
 									"AREA_FILE_SHOW" => "file",
 									"AREA_FILE_SUFFIX" => "",
 									"AREA_FILE_RECURSIVE" => "Y",
+                                    "CACHE_TYPE" => "Y",
+                                    "CACHE_TIME" => "36000000",
+                                    "CACHE_FILTER" => "Y",
+                                    "CACHE_GROUPS" => "N",
 									"EDIT_TEMPLATE" => "standard.php"
 								),
 								false
@@ -466,6 +552,10 @@ if ($USER->IsAdmin()) {
 										"START_FROM" => "0",
 										"PATH" => "",
 										"SITE_ID" => "-",
+                                        "CACHE_TYPE" => "Y",
+                                        "CACHE_TIME" => "36000000",
+                                        "CACHE_FILTER" => "Y",
+                                        "CACHE_GROUPS" => "N",
 										"SHOW_SUBSECTIONS" => "N"
 										),
 										false

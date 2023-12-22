@@ -9,8 +9,8 @@ return array (
   array (
     'value' => 
     array (
-      'config_options' => 3600,
-      'site_domain' => 3600,
+      'config_options' => 36000000,
+      'site_domain' => 36000000,
     ),
     'readonly' => false,
   ),

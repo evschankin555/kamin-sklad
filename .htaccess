@@ -71,11 +71,12 @@ RewriteRule ^(.*)$ / [R=301,L]
 
 <IfModule mod_expires.c>
   ExpiresActive on
-  ExpiresByType image/jpeg "access plus 3 day"
-  ExpiresByType image/gif "access plus 3 day"
-  ExpiresByType image/png "access plus 3 day"
-  ExpiresByType text/css "access plus 3 day"
-  ExpiresByType application/javascript "access plus 3 day"  
+  ExpiresByType image/jpeg "access plus 30 day"
+  ExpiresByType image/gif "access plus 30 day"
+  ExpiresByType image/png "access plus 30 day"
+  ExpiresByType text/css "access plus 30 day"
+  ExpiresByType application/javascript "access plus 30 day"
+  ExpiresByType text/javascript "access plus 30 day"
 </IfModule>
 
  <FilesMatch "(rk|redirect).(php)$"> 
