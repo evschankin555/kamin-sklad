@@ -1,6 +1,10 @@
 <?
 if($arResult){
-	$arResult = COptimus::getChilds($arResult);
+// Создаем объект класса COptimus
+    $optimus = new COptimus();
+
+// Вызываем метод getChilds() на объекте $optimus
+    $arResult = $optimus->getChilds($arResult);
 	$isCatalog=false;
 	$arCatalogItem=array();
 	foreach($arResult as $key=>$arItem){
@@ -26,7 +30,34 @@ if($arResult){
 	}
 	if($isCatalog){
 		$catalog_id=\Bitrix\Main\Config\Option::get("aspro.optimus", "CATALOG_IBLOCK_ID", COptimusCache::$arIBlocks[SITE_ID]['aspro_optimus_catalog']['aspro_optimus_catalog'][0]);
-		$arSections = COptimusCache::CIBlockSection_GetList(array('SORT' => 'ASC', 'ID' => 'ASC', 'CACHE' => array('TAG' => COptimusCache::GetIBlockCacheTag($catalog_id), 'GROUP' => array('ID'))), array('IBLOCK_ID' => $catalog_id, 'ACTIVE' => 'Y', 'GLOBAL_ACTIVE' => 'Y', 'ACTIVE_DATE' => 'Y', array("LOGIC"=>"OR",array("UF_REGIONS"=>false),array("!UF_REGIONS"=>false,"UF_REGIONS"=>$arParams["REGIONS"])), '<DEPTH_LEVEL' =>\Bitrix\Main\Config\Option::get("aspro.optimus", "MAX_DEPTH_MENU", 2)), false, array("ID", "NAME", "PICTURE", "LEFT_MARGIN", "RIGHT_MARGIN", "DEPTH_LEVEL", "SECTION_PAGE_URL", "IBLOCK_SECTION_ID"));
+// Создаем объект класса COptimusCache
+        $optimusCache = new COptimusCache();
+
+// Вызываем метод CIBlockSection_GetList() на объекте $optimusCache
+        $arSections = $optimusCache->CIBlockSection_GetList(
+            array(
+                'SORT' => 'ASC',
+                'ID' => 'ASC',
+                'CACHE' => array(
+                    'TAG' => $optimusCache->GetIBlockCacheTag($catalog_id),
+                    'GROUP' => array('ID')
+                )
+            ),
+            array(
+                'IBLOCK_ID' => $catalog_id,
+                'ACTIVE' => 'Y',
+                'GLOBAL_ACTIVE' => 'Y',
+                'ACTIVE_DATE' => 'Y',
+                array(
+                    "LOGIC" => "OR",
+                    array("UF_REGIONS" => false),
+                    array("!UF_REGIONS" => false, "UF_REGIONS" => $arParams["REGIONS"])
+                ),
+                '<DEPTH_LEVEL' => \Bitrix\Main\Config\Option::get("aspro.optimus", "MAX_DEPTH_MENU", 2)
+            ),
+            false,
+            array("ID", "NAME", "PICTURE", "LEFT_MARGIN", "RIGHT_MARGIN", "DEPTH_LEVEL", "SECTION_PAGE_URL", "IBLOCK_SECTION_ID")
+        );
 		$arTmpResult = array();
 		if($arSections){
 

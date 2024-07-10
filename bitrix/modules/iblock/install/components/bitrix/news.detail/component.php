@@ -1,5 +1,8 @@
-<?
-if(!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED!==true) die();
+<?php
+if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED!==true)
+{
+	die();
+}
 /** @var CBitrixComponent $this */
 /** @var array $arParams */
 /** @var array $arResult */
@@ -10,86 +13,123 @@ if(!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED!==true) die();
 /** @global CUser $USER */
 /** @global CMain $APPLICATION */
 
-use Bitrix\Main\Context,
-	Bitrix\Main\Type\DateTime,
-	Bitrix\Main\Loader,
-	Bitrix\Iblock;
+use Bitrix\Main\Context;
+use Bitrix\Main\Type\Collection;
+use Bitrix\Main\Type\DateTime;
+use Bitrix\Main\Loader;
+use Bitrix\Iblock;
 
 CPageOption::SetOptionString("main", "nav_page_in_session", "N");
 
-if(!isset($arParams["CACHE_TIME"]))
-	$arParams["CACHE_TIME"] = 36000000;
+$arParams['SET_STATUS_404'] ??= 'N';
+$arParams['SHOW_404'] ??= 'N';
+$arParams['FILE_404'] = trim((string)($arParams['FILE_404'] ?? ''));
 
-$arParams["IBLOCK_TYPE"] = trim($arParams["IBLOCK_TYPE"]);
-if(strlen($arParams["IBLOCK_TYPE"])<=0)
-	$arParams["IBLOCK_TYPE"] = "news";
+$arParams['CACHE_TIME'] = (int)($arParams['CACHE_TIME'] ?? 36000000);
 
-$arParams["ELEMENT_ID"] = intval($arParams["~ELEMENT_ID"]);
-if($arParams["ELEMENT_ID"] > 0 && $arParams["ELEMENT_ID"]."" != $arParams["~ELEMENT_ID"])
+$arParams['IBLOCK_TYPE'] = trim((string)($arParams['IBLOCK_TYPE'] ?? ''));
+if ($arParams['IBLOCK_TYPE'] === '')
 {
-	if (Loader::includeModule("iblock"))
+	$arParams['IBLOCK_TYPE'] = 'news';
+}
+$arParams['IBLOCK_ID'] = (int)($arParams['IBLOCK_ID'] ?? 0);
+
+$arParams['~ELEMENT_ID'] = (string)($arParams['~ELEMENT_ID'] ?? '');
+$arParams['ELEMENT_ID'] = (int)$arParams['~ELEMENT_ID'];
+if ($arParams['ELEMENT_ID'] > 0 && (string)$arParams['ELEMENT_ID'] !== $arParams['~ELEMENT_ID'])
+{
+	if (Loader::includeModule('iblock'))
 	{
 		Iblock\Component\Tools::process404(
-			trim($arParams["MESSAGE_404"]) ?: GetMessage("T_NEWS_DETAIL_NF")
-			,true
-			,$arParams["SET_STATUS_404"] === "Y"
-			,$arParams["SHOW_404"] === "Y"
-			,$arParams["FILE_404"]
+			trim($arParams['MESSAGE_404']) ?: GetMessage('T_NEWS_DETAIL_NF'),
+			true,
+			$arParams['SET_STATUS_404'] === 'Y',
+			$arParams['SHOW_404'] === 'Y',
+			$arParams['FILE_404']
 		);
 	}
 	return;
 }
+$arParams['~ELEMENT_CODE'] = (string)($arParams['~ELEMENT_CODE'] ?? '');
+$arParams['ELEMENT_CODE'] = (string)($arParams['ELEMENT_CODE'] ?? '');
 
-$arParams["CHECK_DATES"] = $arParams["CHECK_DATES"]!="N";
-if(!is_array($arParams["FIELD_CODE"]))
-	$arParams["FIELD_CODE"] = array();
-foreach($arParams["FIELD_CODE"] as $key=>$val)
-	if(!$val)
-		unset($arParams["FIELD_CODE"][$key]);
-if(!is_array($arParams["PROPERTY_CODE"]))
-	$arParams["PROPERTY_CODE"] = array();
-foreach($arParams["PROPERTY_CODE"] as $k=>$v)
-	if($v==="")
-		unset($arParams["PROPERTY_CODE"][$k]);
+$arParams['~SECTION_ID'] = (string)($arParams['~SECTION_ID'] ?? '');
+$arParams['SECTION_ID'] = (int)$arParams['~SECTION_ID'];
+$arParams['~SECTION_CODE'] = (string)($arParams['~SECTION_CODE'] ?? '');
+$arParams['SECTION_CODE'] = (string)($arParams['SECTION_CODE'] ?? '');
 
-$arParams["IBLOCK_URL"]=trim($arParams["IBLOCK_URL"]);
+$arParams['CHECK_DATES'] = ($arParams['CHECK_DATES'] ?? 'Y') !== 'N';
 
-$arParams["META_KEYWORDS"]=trim($arParams["META_KEYWORDS"]);
-if(strlen($arParams["META_KEYWORDS"])<=0)
-	$arParams["META_KEYWORDS"] = "-";
-$arParams["META_DESCRIPTION"]=trim($arParams["META_DESCRIPTION"]);
-if(strlen($arParams["META_DESCRIPTION"])<=0)
-	$arParams["META_DESCRIPTION"] = "-";
-$arParams["BROWSER_TITLE"]=trim($arParams["BROWSER_TITLE"]);
-if(strlen($arParams["BROWSER_TITLE"])<=0)
-	$arParams["BROWSER_TITLE"] = "-";
-
-$arParams["INCLUDE_IBLOCK_INTO_CHAIN"] = $arParams["INCLUDE_IBLOCK_INTO_CHAIN"]!="N";
-$arParams["ADD_SECTIONS_CHAIN"] = $arParams["ADD_SECTIONS_CHAIN"]!="N"; //Turn on by default
-$arParams["ADD_ELEMENT_CHAIN"] = (isset($arParams["ADD_ELEMENT_CHAIN"]) && $arParams["ADD_ELEMENT_CHAIN"] == "Y");
-$arParams["SET_TITLE"] = $arParams["SET_TITLE"]!="N";
-$arParams["SET_LAST_MODIFIED"] = $arParams["SET_LAST_MODIFIED"]==="Y";
-$arParams["SET_BROWSER_TITLE"] = (isset($arParams["SET_BROWSER_TITLE"]) && $arParams["SET_BROWSER_TITLE"] === 'N' ? 'N' : 'Y');
-$arParams["SET_META_KEYWORDS"] = (isset($arParams["SET_META_KEYWORDS"]) && $arParams["SET_META_KEYWORDS"] === 'N' ? 'N' : 'Y');
-$arParams["SET_META_DESCRIPTION"] = (isset($arParams["SET_META_DESCRIPTION"]) && $arParams["SET_META_DESCRIPTION"] === 'N' ? 'N' : 'Y');
-$arParams["STRICT_SECTION_CHECK"] = (isset($arParams["STRICT_SECTION_CHECK"]) && $arParams["STRICT_SECTION_CHECK"] === "Y");
-$arParams["ACTIVE_DATE_FORMAT"] = trim($arParams["ACTIVE_DATE_FORMAT"]);
-if(strlen($arParams["ACTIVE_DATE_FORMAT"])<=0)
-	$arParams["ACTIVE_DATE_FORMAT"] = $DB->DateFormatToPHP(CSite::GetDateFormat("SHORT"));
-
-$arParams["DISPLAY_TOP_PAGER"] = $arParams["DISPLAY_TOP_PAGER"]=="Y";
-$arParams["DISPLAY_BOTTOM_PAGER"] = $arParams["DISPLAY_BOTTOM_PAGER"]!="N";
-$arParams["PAGER_TITLE"] = trim($arParams["PAGER_TITLE"]);
-$arParams["PAGER_SHOW_ALWAYS"] = $arParams["PAGER_SHOW_ALWAYS"]!="N";
-$arParams["PAGER_TEMPLATE"] = trim($arParams["PAGER_TEMPLATE"]);
-$arParams["PAGER_SHOW_ALL"] = $arParams["PAGER_SHOW_ALL"]!=="N";
-
-if($arParams["DISPLAY_TOP_PAGER"] || $arParams["DISPLAY_BOTTOM_PAGER"])
+$arParams['FIELD_CODE'] ??= [];
+if (!is_array($arParams['FIELD_CODE']))
 {
-	$arNavParams = array(
-		"nPageSize" => 1,
-		"bShowAll" => $arParams["PAGER_SHOW_ALL"],
-	);
+	$arParams['FIELD_CODE'] = [];
+}
+$arParams['FIELD_CODE'] = array_filter($arParams['FIELD_CODE']);
+
+$arParams['PROPERTY_CODE'] ??= [];
+if (!is_array($arParams['PROPERTY_CODE']))
+{
+	$arParams['PROPERTY_CODE'] = [];
+}
+$arParams['PROPERTY_CODE'] = array_filter($arParams['PROPERTY_CODE']);
+
+$arParams['IBLOCK_URL'] = trim((string)($arParams['IBLOCK_URL'] ?? ''));
+
+$arParams['META_KEYWORDS'] = trim((string)($arParams['META_KEYWORDS'] ?? ''));
+if ($arParams['META_KEYWORDS'] === '')
+{
+	$arParams['META_KEYWORDS'] = '-';
+}
+
+$arParams['META_DESCRIPTION'] = trim((string)($arParams['META_DESCRIPTION'] ?? ''));
+if ($arParams['META_DESCRIPTION'] === '')
+{
+	$arParams['META_DESCRIPTION'] = '-';
+}
+
+$arParams['BROWSER_TITLE'] = trim((string)($arParams['BROWSER_TITLE'] ?? ''));
+if ($arParams['BROWSER_TITLE'] === '')
+{
+	$arParams['BROWSER_TITLE'] = '-';
+}
+
+$arParams['INCLUDE_IBLOCK_INTO_CHAIN'] = ($arParams['INCLUDE_IBLOCK_INTO_CHAIN'] ?? 'Y') !== 'N';
+$arParams['ADD_SECTIONS_CHAIN'] = ($arParams['ADD_SECTIONS_CHAIN'] ?? 'Y') !== 'N'; //Turn on by default
+$arParams['ADD_ELEMENT_CHAIN'] = ($arParams['ADD_ELEMENT_CHAIN'] ?? 'N') === 'Y';
+$arParams['SET_TITLE'] = ($arParams['SET_TITLE'] ?? 'Y') !== 'N';
+$arParams['SET_LAST_MODIFIED'] = ($arParams['SET_LAST_MODIFIED'] ?? 'N') === 'Y';
+
+$arParams['SET_BROWSER_TITLE'] ??= 'Y';
+$arParams['SET_BROWSER_TITLE'] = $arParams['SET_BROWSER_TITLE'] === 'N' ? 'N' : 'Y';
+
+$arParams['SET_META_KEYWORDS'] ??= 'Y';
+$arParams['SET_META_KEYWORDS'] = $arParams['SET_META_KEYWORDS'] === 'N' ? 'N' : 'Y';
+
+$arParams['SET_META_DESCRIPTION'] ??= 'Y';
+$arParams['SET_META_DESCRIPTION'] = $arParams['SET_META_DESCRIPTION'] === 'N' ? 'N' : 'Y';
+
+$arParams['STRICT_SECTION_CHECK'] = ($arParams['STRICT_SECTION_CHECK'] ?? 'N') === 'Y';
+
+$arParams['ACTIVE_DATE_FORMAT'] = trim((string)($arParams['ACTIVE_DATE_FORMAT'] ?? ''));
+if ($arParams['ACTIVE_DATE_FORMAT'] === '')
+{
+	$arParams['ACTIVE_DATE_FORMAT'] = $DB->DateFormatToPHP(CSite::GetDateFormat('SHORT'));
+}
+
+$arParams['DISPLAY_TOP_PAGER'] = ($arParams['DISPLAY_TOP_PAGER'] ?? 'N') === 'Y';
+$arParams['DISPLAY_BOTTOM_PAGER'] = ($arParams['DISPLAY_BOTTOM_PAGER'] ?? 'Y') !== 'N';
+$arParams['PAGER_TITLE'] = trim((string)($arParams['PAGER_TITLE'] ?? ''));
+$arParams['PAGER_SHOW_ALWAYS'] = ($arParams['PAGER_SHOW_ALWAYS'] ?? 'N') !== 'N';
+$arParams['PAGER_TEMPLATE'] = trim((string)($arParams['PAGER_TEMPLATE'] ?? ''));
+$arParams['PAGER_SHOW_ALL'] = ($arParams['PAGER_SHOW_ALL'] ?? 'N') !== 'N';
+
+if ($arParams['DISPLAY_TOP_PAGER'] || $arParams['DISPLAY_BOTTOM_PAGER'])
+{
+	$arNavParams = [
+		'nPageSize' => 1,
+		'bShowAll' => $arParams['PAGER_SHOW_ALL'],
+	];
 	$arNavigation = CDBResult::GetNavParams($arNavParams);
 }
 else
@@ -98,74 +138,99 @@ else
 	$arNavigation = false;
 }
 
-if (empty($arParams["PAGER_PARAMS_NAME"]) || !preg_match("/^[A-Za-z_][A-Za-z01-9_]*$/", $arParams["PAGER_PARAMS_NAME"]))
+if (empty($arParams['PAGER_PARAMS_NAME']) || !preg_match("/^[A-Za-z_][A-Za-z01-9_]*$/", $arParams['PAGER_PARAMS_NAME']))
 {
-	$pagerParameters = array();
+	$pagerParameters = [];
 }
 else
 {
-	$pagerParameters = $GLOBALS[$arParams["PAGER_PARAMS_NAME"]];
+	$pagerParameters = ($GLOBALS[$arParams['PAGER_PARAMS_NAME']] ?? []);
 	if (!is_array($pagerParameters))
-		$pagerParameters = array();
+	{
+		$pagerParameters = [];
+	}
 }
 
-$arParams["SHOW_WORKFLOW"] = $_REQUEST["show_workflow"]=="Y";
+$arParams['SHOW_WORKFLOW'] = ($_REQUEST['show_workflow'] ?? '') === 'Y';
 
-$arParams["USE_PERMISSIONS"] = $arParams["USE_PERMISSIONS"]=="Y";
-if(!is_array($arParams["GROUP_PERMISSIONS"]))
-	$arParams["GROUP_PERMISSIONS"] = array(1);
+$arParams["USE_PERMISSIONS"] = ($arParams["USE_PERMISSIONS"] ?? 'N') === "Y";
+$arParams["GROUP_PERMISSIONS"] ??= [];
+if (!is_array($arParams["GROUP_PERMISSIONS"]))
+{
+	$arParams["GROUP_PERMISSIONS"] = [1];
+}
 
 $bUSER_HAVE_ACCESS = !$arParams["USE_PERMISSIONS"];
-if($arParams["USE_PERMISSIONS"] && isset($USER) && is_object($USER))
+if ($arParams["USE_PERMISSIONS"] && isset($USER) && is_object($USER))
 {
 	$arUserGroupArray = $USER->GetUserGroupArray();
 	foreach($arParams["GROUP_PERMISSIONS"] as $PERM)
 	{
-		if(in_array($PERM, $arUserGroupArray))
+		if (in_array($PERM, $arUserGroupArray))
 		{
 			$bUSER_HAVE_ACCESS = true;
 			break;
 		}
 	}
 }
-if(!$bUSER_HAVE_ACCESS)
+if (!$bUSER_HAVE_ACCESS)
 {
 	ShowError(GetMessage("T_NEWS_DETAIL_PERM_DEN"));
 	return 0;
 }
 
-if($arParams["SHOW_WORKFLOW"] || $this->startResultCache(false, array(($arParams["CACHE_GROUPS"]==="N"? false: $USER->GetGroups()),$bUSER_HAVE_ACCESS, $arNavigation, $pagerParameters)))
+if (
+	$arParams["SHOW_WORKFLOW"]
+	|| $this->startResultCache(
+		false,
+		[
+			(isset($arParams["CACHE_GROUPS"]) && $arParams["CACHE_GROUPS"] === "N"? false : $USER->GetGroups()),
+			$bUSER_HAVE_ACCESS,
+			$arNavigation,
+			$pagerParameters,
+		]
+	)
+)
 {
 
-	if(!Loader::includeModule("iblock"))
+	if (!Loader::includeModule("iblock"))
 	{
 		$this->abortResultCache();
 		ShowError(GetMessage("IBLOCK_MODULE_NOT_INSTALLED"));
 		return;
 	}
 
-	$arFilter = array(
-		"IBLOCK_LID" => SITE_ID,
-		"IBLOCK_ACTIVE" => "Y",
-		"ACTIVE" => "Y",
-		"CHECK_PERMISSIONS" => "Y",
-		"IBLOCK_TYPE" => $arParams["IBLOCK_TYPE"],
-		"SHOW_HISTORY" => $arParams["SHOW_WORKFLOW"]? "Y": "N",
-	);
-	if($arParams["CHECK_DATES"])
-		$arFilter["ACTIVE_DATE"] = "Y";
-	if(intval($arParams["IBLOCK_ID"]) > 0)
-		$arFilter["IBLOCK_ID"] = $arParams["IBLOCK_ID"];
+	$arFilter = [
+		'IBLOCK_LID' => SITE_ID,
+		'IBLOCK_ACTIVE' => 'Y',
+		'ACTIVE' => 'Y',
+		'CHECK_PERMISSIONS' => 'Y',
+		'SHOW_HISTORY' => $arParams['SHOW_WORKFLOW']? 'Y': 'N',
+	];
+	if ($arParams['CHECK_DATES'])
+	{
+		$arFilter['ACTIVE_DATE'] = 'Y';
+	}
+	if ($arParams['IBLOCK_ID'] > 0)
+	{
+		$arFilter['IBLOCK_ID'] = $arParams['IBLOCK_ID'];
+	}
+	else
+	{
+		$arFilter['=IBLOCK_TYPE'] = $arParams['IBLOCK_TYPE'];
+	}
 
 	//Handle case when ELEMENT_CODE used
-	if($arParams["ELEMENT_ID"] <= 0)
+	if ($arParams["ELEMENT_ID"] <= 0)
+	{
 		$arParams["ELEMENT_ID"] = CIBlockFindTools::GetElementID(
 			$arParams["ELEMENT_ID"],
 			$arParams["~ELEMENT_CODE"],
-			false,
-			false,
+			$arParams["STRICT_SECTION_CHECK"] ? $arParams["SECTION_ID"] : false,
+			$arParams["STRICT_SECTION_CHECK"] ? $arParams["~SECTION_CODE"] : false,
 			$arFilter
 		);
+	}
 
 	if ($arParams["STRICT_SECTION_CHECK"])
 	{
@@ -173,11 +238,11 @@ if($arParams["SHOW_WORKFLOW"] || $this->startResultCache(false, array(($arParams
 		{
 			$arFilter["SECTION_ID"] = $arParams["SECTION_ID"];
 		}
-		elseif (strlen($arParams["~SECTION_CODE"]) > 0)
+		elseif ($arParams["~SECTION_CODE"] !== '')
 		{
 			$arFilter["SECTION_CODE"] = $arParams["~SECTION_CODE"];
 		}
-		elseif ($this->getParent() && strpos($arParams["DETAIL_URL"], "#SECTION_CODE_PATH#") !== false)
+		elseif ($this->getParent() && mb_strpos($arParams["DETAIL_URL"], "#SECTION_CODE_PATH#") !== false)
 		{
 			$this->abortResultCache();
 			Iblock\Component\Tools::process404(
@@ -207,43 +272,52 @@ if($arParams["SHOW_WORKFLOW"] || $this->startResultCache(false, array(($arParams
 		$arParams["ELEMENT_ID"] = $WF_ELEMENT_ID;
 	}
 
-	$arSelect = array_merge($arParams["FIELD_CODE"], array(
-		"ID",
-		"NAME",
-		"IBLOCK_ID",
-		"IBLOCK_SECTION_ID",
-		"DETAIL_TEXT",
-		"DETAIL_TEXT_TYPE",
-		"PREVIEW_TEXT",
-		"PREVIEW_TEXT_TYPE",
-		"DETAIL_PICTURE",
-		"TIMESTAMP_X",
-		"ACTIVE_FROM",
-		"LIST_PAGE_URL",
-		"DETAIL_PAGE_URL",
-	));
-	$bGetProperty = count($arParams["PROPERTY_CODE"]) > 0
-			|| $arParams["BROWSER_TITLE"] != "-"
-			|| $arParams["META_KEYWORDS"] != "-"
-			|| $arParams["META_DESCRIPTION"] != "-";
+	$arSelect = array_merge(
+		$arParams["FIELD_CODE"],
+		[
+			"ID",
+			"NAME",
+			"IBLOCK_ID",
+			"IBLOCK_SECTION_ID",
+			"DETAIL_TEXT",
+			"DETAIL_TEXT_TYPE",
+			"PREVIEW_TEXT",
+			"PREVIEW_TEXT_TYPE",
+			"DETAIL_PICTURE",
+			"TIMESTAMP_X",
+			"ACTIVE_FROM",
+			"LIST_PAGE_URL",
+			"DETAIL_PAGE_URL",
+		]
+	);
+	$bGetProperty =
+		!empty($arParams["PROPERTY_CODE"])
+		|| $arParams["BROWSER_TITLE"] != "-"
+		|| $arParams["META_KEYWORDS"] != "-"
+		|| $arParams["META_DESCRIPTION"] != "-"
+	;
 	if($bGetProperty)
-		$arSelect[]="PROPERTY_*";
-	if ($arParams['SET_CANONICAL_URL'] === 'Y')
+	{
+		$arSelect[] = "PROPERTY_*";
+	}
+	if (isset($arParams['SET_CANONICAL_URL']) && $arParams['SET_CANONICAL_URL'] === 'Y')
+	{
 		$arSelect[] = 'CANONICAL_PAGE_URL';
+	}
 
 	$arFilter["ID"] = $arParams["ELEMENT_ID"];
 	$arFilter["SHOW_HISTORY"] = $WF_SHOW_HISTORY;
 
 	$rsElement = CIBlockElement::GetList(array(), $arFilter, false, false, $arSelect);
-	$rsElement->SetUrlTemplates($arParams["DETAIL_URL"], "", $arParams["IBLOCK_URL"]);
+	$rsElement->SetUrlTemplates($arParams["DETAIL_URL"] ?? '', '', $arParams["IBLOCK_URL"]);
 	if($obElement = $rsElement->GetNextElement())
 	{
 		$arResult = $obElement->GetFields();
 
 		$arResult["NAV_RESULT"] = new CDBResult;
-		if(($arResult["DETAIL_TEXT_TYPE"]=="html") && (strstr($arResult["DETAIL_TEXT"], "<BREAK />")!==false))
+		if(($arResult["DETAIL_TEXT_TYPE"]=="html") && (mb_strstr($arResult["DETAIL_TEXT"], "<BREAK />") !== false))
 			$arPages=explode("<BREAK />", $arResult["DETAIL_TEXT"]);
-		elseif(($arResult["DETAIL_TEXT_TYPE"]!="html") && (strstr($arResult["DETAIL_TEXT"], "&lt;BREAK /&gt;")!==false))
+		elseif(($arResult["DETAIL_TEXT_TYPE"]!="html") && (mb_strstr($arResult["DETAIL_TEXT"], "&lt;BREAK /&gt;") !== false))
 			$arPages=explode("&lt;BREAK /&gt;", $arResult["DETAIL_TEXT"]);
 		else
 			$arPages=array();
@@ -252,6 +326,7 @@ if($arParams["SHOW_WORKFLOW"] || $this->startResultCache(false, array(($arParams
 		if(count($arPages)==0)
 		{
 			$arResult["NAV_RESULT"] = false;
+			$arResult["NAV_CACHED_DATA"] = null;
 		}
 		else
 		{
@@ -287,7 +362,7 @@ if($arParams["SHOW_WORKFLOW"] || $this->startResultCache(false, array(($arParams
 				$arResult["NAV_TEXT"].=$ar;
 		}
 
-		if(strlen($arResult["ACTIVE_FROM"])>0)
+		if($arResult["ACTIVE_FROM"] <> '')
 			$arResult["DISPLAY_ACTIVE_FROM"] = CIBlockFormatProperties::DateFormat($arParams["ACTIVE_DATE_FORMAT"], MakeTimeStamp($arResult["ACTIVE_FROM"], CSite::GetDateFormat()));
 		else
 			$arResult["DISPLAY_ACTIVE_FROM"] = "";
@@ -307,6 +382,7 @@ if($arParams["SHOW_WORKFLOW"] || $this->startResultCache(false, array(($arParams
 			if(array_key_exists($code, $arResult))
 				$arResult["FIELDS"][$code] = $arResult[$code];
 
+		$arResult['PROPERTIES'] = [];
 		if($bGetProperty)
 			$arResult["PROPERTIES"] = $obElement->GetProperties();
 		$arResult["DISPLAY_PROPERTIES"]=array();
@@ -315,14 +391,15 @@ if($arParams["SHOW_WORKFLOW"] || $this->startResultCache(false, array(($arParams
 			$prop = &$arResult["PROPERTIES"][$pid];
 			if(
 				(is_array($prop["VALUE"]) && count($prop["VALUE"])>0)
-				|| (!is_array($prop["VALUE"]) && strlen($prop["VALUE"])>0)
+				|| (!is_array($prop["VALUE"]) && $prop["VALUE"] <> '')
 			)
 			{
-				$arResult["DISPLAY_PROPERTIES"][$pid] = CIBlockFormatProperties::GetDisplayValue($arResult, $prop, "news_out");
+				$arResult["DISPLAY_PROPERTIES"][$pid] = CIBlockFormatProperties::GetDisplayValue($arResult, $prop);
 			}
+			\CIBlockFormatProperties::clearCache();
 		}
 
-		$arResult["IBLOCK"] = GetIBlock($arResult["IBLOCK_ID"], $arResult["IBLOCK_TYPE"]);
+		$arResult["IBLOCK"] = GetIBlock($arResult["IBLOCK_ID"], $arResult["IBLOCK_TYPE_ID"]);
 
 		$arResult["SECTION"] = array("PATH" => array());
 		$arResult["SECTION_URL"] = "";
@@ -347,7 +424,7 @@ if($arParams["SHOW_WORKFLOW"] || $this->startResultCache(false, array(($arParams
 			}
 		}
 
-		$resultCacheKeys = array(
+		$resultCacheKeys = [
 			"ID",
 			"IBLOCK_ID",
 			"NAV_CACHED_DATA",
@@ -360,7 +437,7 @@ if($arParams["SHOW_WORKFLOW"] || $this->startResultCache(false, array(($arParams
 			"SECTION",
 			"IPROPERTY_VALUES",
 			"TIMESTAMP_X",
-		);
+		];
 
 		if (
 			$arParams["SET_TITLE"]
@@ -376,24 +453,24 @@ if($arParams["SHOW_WORKFLOW"] || $this->startResultCache(false, array(($arParams
 			if ($arParams["SET_TITLE"])
 			{
 				$arResult["META_TAGS"]["TITLE"] = (
-					$arResult["IPROPERTY_VALUES"]["ELEMENT_PAGE_TITLE"] != ""
-					? $arResult["IPROPERTY_VALUES"]["ELEMENT_PAGE_TITLE"]
-					: $arResult["NAME"]
+					(string)($arResult["IPROPERTY_VALUES"]["ELEMENT_PAGE_TITLE"] ?? '') !== ''
+						? $arResult["IPROPERTY_VALUES"]["ELEMENT_PAGE_TITLE"]
+						: $arResult["NAME"]
 				);
 			}
 
 			if ($arParams["ADD_ELEMENT_CHAIN"])
 			{
 				$arResult["META_TAGS"]["ELEMENT_CHAIN"] = (
-					$arResult["IPROPERTY_VALUES"]["ELEMENT_PAGE_TITLE"] != ""
-					? $arResult["IPROPERTY_VALUES"]["ELEMENT_PAGE_TITLE"]
-					: $arResult["NAME"]
+					(string)($arResult["IPROPERTY_VALUES"]["ELEMENT_PAGE_TITLE"] ?? '') !== ''
+						? $arResult["IPROPERTY_VALUES"]["ELEMENT_PAGE_TITLE"]
+						: $arResult["NAME"]
 				);
 			}
 
 			if ($arParams["SET_BROWSER_TITLE"] === 'Y')
 			{
-				$browserTitle = \Bitrix\Main\Type\Collection::firstNotEmpty(
+				$browserTitle = Collection::firstNotEmpty(
 					$arResult["PROPERTIES"], array($arParams["BROWSER_TITLE"], "VALUE")
 					,$arResult, $arParams["BROWSER_TITLE"]
 					,$arResult["IPROPERTY_VALUES"], "ELEMENT_META_TITLE"
@@ -407,7 +484,7 @@ if($arParams["SHOW_WORKFLOW"] || $this->startResultCache(false, array(($arParams
 			}
 			if ($arParams["SET_META_KEYWORDS"] === 'Y')
 			{
-				$metaKeywords = \Bitrix\Main\Type\Collection::firstNotEmpty(
+				$metaKeywords = Collection::firstNotEmpty(
 					$arResult["PROPERTIES"], array($arParams["META_KEYWORDS"], "VALUE")
 					,$arResult["IPROPERTY_VALUES"], "ELEMENT_META_KEYWORDS"
 				);
@@ -420,7 +497,7 @@ if($arParams["SHOW_WORKFLOW"] || $this->startResultCache(false, array(($arParams
 			}
 			if ($arParams["SET_META_DESCRIPTION"] === 'Y')
 			{
-				$metaDescription = \Bitrix\Main\Type\Collection::firstNotEmpty(
+				$metaDescription = Collection::firstNotEmpty(
 					$arResult["PROPERTIES"], array($arParams["META_DESCRIPTION"], "VALUE")
 					,$arResult["IPROPERTY_VALUES"], "ELEMENT_META_DESCRIPTION"
 				);
@@ -441,7 +518,7 @@ if($arParams["SHOW_WORKFLOW"] || $this->startResultCache(false, array(($arParams
 	{
 		$this->abortResultCache();
 		Iblock\Component\Tools::process404(
-			trim($arParams["MESSAGE_404"]) ?: GetMessage("T_NEWS_DETAIL_NF")
+			trim($arParams["MESSAGE_404"] ?? '') ?: GetMessage("T_NEWS_DETAIL_NF")
 			,true
 			,$arParams["SET_STATUS_404"] === "Y"
 			,$arParams["SHOW_404"] === "Y"
@@ -501,7 +578,7 @@ if(isset($arResult["ID"]))
 
 	$this->setTemplateCachedData($arResult["NAV_CACHED_DATA"]);
 
-	if ($arParams['SET_CANONICAL_URL'] === 'Y' && $arResult["CANONICAL_PAGE_URL"])
+	if (isset($arParams['SET_CANONICAL_URL']) && $arParams['SET_CANONICAL_URL'] === 'Y' && $arResult["CANONICAL_PAGE_URL"])
 	{
 		$APPLICATION->SetPageProperty('canonical', $arResult["CANONICAL_PAGE_URL"]);
 	}

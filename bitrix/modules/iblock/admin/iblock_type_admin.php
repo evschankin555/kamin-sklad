@@ -9,8 +9,10 @@ IncludeModuleLangFile(__FILE__);
 $sTableID = "tbl_iblock_type";
 
 // Sorting init
-$oSort = new CAdminSorting($sTableID, "ID", "asc");
-$arOrder = (strtoupper($by) === "ID"? array($by => $order): array($by => $order, "ID" => "ASC"));
+$oSort = new CAdminSorting($sTableID, "ID", "ASC");
+$by = mb_strtoupper($oSort->getField());
+$order = mb_strtoupper($oSort->getOrder());
+$arOrder = ($by === "ID"? array($by => $order): array($by => $order, "ID" => "ASC"));
 // List init
 $lAdmin = new CAdminList($sTableID, $oSort);
 
@@ -60,12 +62,15 @@ if($USER->IsAdmin() && $lAdmin->EditAction()) // Save button was pressed
 			$lAdmin->AddUpdateError(GetMessage("IBLOCK_TYPE_ADMIN_ERR_SAVE")." (&quot;".htmlspecialcharsbx($ID)."&quot;): ".$obBlocktype->LAST_ERROR, $ID);
 			$DB->Rollback();
 		}
-		$DB->Commit();
+		else
+		{
+			$DB->Commit();
+		}
 	}
 }
 if($USER->IsAdmin() && ($arID = $lAdmin->GroupAction()))
 {
-	if($_REQUEST['action_target']=='selected')
+	if ($lAdmin->IsGroupActionToAll())
 	{
 		$rsData = CIBlockType::GetList($arOrder, $arFilter);
 		while($arRes = $rsData->Fetch())
@@ -74,7 +79,7 @@ if($USER->IsAdmin() && ($arID = $lAdmin->GroupAction()))
 
 	foreach($arID as $ID)
 	{
-		if(strlen($ID)<=0)
+		if($ID == '')
 			continue;
 
 		switch($_REQUEST['action'])
@@ -86,7 +91,10 @@ if($USER->IsAdmin() && ($arID = $lAdmin->GroupAction()))
 				$DB->Rollback();
 				$lAdmin->AddGroupError(GetMessage("IBLOCK_TYPE_ADMIN_ERR_DEL")." (&quot;".htmlspecialcharsbx($ID)."&quot;)", $ID);
 			}
-			$DB->Commit();
+			else
+			{
+				$DB->Commit();
+			}
 			break;
 		}
 	}
@@ -149,7 +157,7 @@ while($arRes = $rsData->NavNext(true, "f_"))
 	$ibtypelang = CIBlockType::GetByIDLang($f_ID, LANGUAGE_ID);
 	$row =& $lAdmin->AddRow($f_ID, $arRes);
 
-	$row->AddViewField("NAME", $ibtypelang["NAME"]);
+	$row->AddViewField("NAME", $ibtypelang["NAME"] ?? '');
 	if($USER->IsAdmin())
 	{
 		$row->AddInputField("SORT");

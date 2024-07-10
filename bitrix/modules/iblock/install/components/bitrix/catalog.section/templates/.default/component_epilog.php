@@ -42,16 +42,22 @@ if ($request->isAjaxRequest() && ($request->get('action') === 'showMore' || $req
 	$content = ob_get_contents();
 	ob_end_clean();
 
-	list(, $itemsContainer) = explode('<!-- items-container -->', $content);
-	list(, $paginationContainer) = explode('<!-- pagination-container -->', $content);
+	[, $itemsContainer] = explode('<!-- items-container -->', $content);
+	$paginationContainer = '';
+	if ($templateData['USE_PAGINATION_CONTAINER'])
+	{
+		[, $paginationContainer] = explode('<!-- pagination-container -->', $content);
+	}
+	[, $epilogue] = explode('<!-- component-end -->', $content);
 
-	if ($arParams['AJAX_MODE'] === 'Y')
+	if (isset($arParams['AJAX_MODE']) && $arParams['AJAX_MODE'] === 'Y')
 	{
 		$component->prepareLinks($paginationContainer);
 	}
 
 	$component::sendJsonAnswer(array(
 		'items' => $itemsContainer,
-		'pagination' => $paginationContainer
+		'pagination' => $paginationContainer,
+		'epilogue' => $epilogue,
 	));
 }

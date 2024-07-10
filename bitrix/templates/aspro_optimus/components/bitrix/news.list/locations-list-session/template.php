@@ -18,7 +18,8 @@ foreach($arResult["ITEMS"] as $arItem){
 
 	$arrLocation = array();
 	$arrLocationNames = array();
-	$db_res = CSaleLocationGroup::GetLocationList(array("LOCATION_GROUP_ID"=>$arItem['PROPERTIES']['cities']["VALUE"]));
+    $saleLocationGroup = new CSaleLocationGroup();
+    $db_res = $saleLocationGroup->GetLocationList(array("LOCATION_GROUP_ID"=>$arItem['PROPERTIES']['cities']["VALUE"]));
 	while ($ar_res = $db_res->Fetch())
 	{
 		$arrLocation[]=$ar_res["LOCATION_ID"];

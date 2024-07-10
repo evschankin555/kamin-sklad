@@ -101,14 +101,20 @@ class IblockValues extends BaseValues
 			if (empty($result))
 			{
 				$result = parent::queryValues();
+				$fields = array(
+					"IBLOCK_ID",
+					"IPROP_ID",
+				);
+				$rows = array();
 				foreach ($result as $row)
 				{
-					$connection->add("b_iblock_iblock_iprop", array(
-						"IBLOCK_ID" => $this->iblockId,
-						"IPROP_ID" => $row["ID"],
-						"VALUE" => $row["VALUE"],
-					), null);
+					$rows[] = array(
+						'IBLOCK_ID' => $this->iblockId,
+						'IPROP_ID' => $row["ID"],
+						'VALUE' => $row["VALUE"],
+					);
 				}
+				$this->insertValues("b_iblock_iblock_iprop", $fields, $rows);
 			}
 		}
 		return $result;

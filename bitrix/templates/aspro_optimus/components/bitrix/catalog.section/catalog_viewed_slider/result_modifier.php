@@ -14,6 +14,8 @@ $arDefaultParams = array(
 	'ADD_TO_BASKET_ACTION' => 'ADD',
 	'DEFAULT_COUNT' => '1',
 );
+$optimusInstance = new COptimus();
+
 $arParams = array_merge($arDefaultParams, $arParams);
 
 if ('TYPE_1' != $arParams['TYPE_SKU'] )
@@ -306,10 +308,10 @@ if (!empty($arResult['ITEMS'])){
 						unset($arOneProp);
 					}
 
-					$totalCount = COptimus::GetTotalCount($arOffer);
+					$totalCount = $optimusInstance->GetTotalCount($arOffer);
 					$arOffer['IS_OFFER'] = 'Y';
 					$arOffer['IBLOCK_ID'] = $arResult['IBLOCK_ID'];
-					$arAddToBasketData = COptimus::GetAddToBasketArray($arOffer, $totalCount, $arParams["DEFAULT_COUNT"], $arParams["BASKET_URL"], false, $arItemIDs["ALL_ITEM_IDS"], 'small read_more1', $arParams);
+					$arAddToBasketData = $optimusInstance->GetAddToBasketArray($arOffer, $totalCount, $arParams["DEFAULT_COUNT"], $arParams["BASKET_URL"], false, $arItemIDs["ALL_ITEM_IDS"], 'small read_more1', $arParams);
 					$arAddToBasketData["HTML"] = str_replace('data-item', 'data-props="'.$arOfferProps.'" data-item', $arAddToBasketData["HTML"]);
 
 					$arOneRow = array(
@@ -331,7 +333,7 @@ if (!empty($arResult['ITEMS'])){
 						'MEASURE' => $arOffer['~CATALOG_MEASURE_NAME'],
 						'CAN_BUY' => $arOffer['CAN_BUY'],
 						'CATALOG_SUBSCRIBE' => $arOffer['CATALOG_SUBSCRIBE'],
-						'AVAILIABLE' => COptimus::GetQuantityArray($arOffer['CATALOG_QUANTITY']),
+						'AVAILIABLE' => $optimusInstance->GetQuantityArray($arOffer['CATALOG_QUANTITY']),
 						'URL' => $arOffer['DETAIL_PAGE_URL'],
 						'SHOW_MEASURE' => ($arParams["SHOW_MEASURE"]=="Y" ? "Y" : "N"),
 						'SHOW_ONE_CLICK_BUY' => "N",
@@ -361,7 +363,7 @@ if (!empty($arResult['ITEMS'])){
 
 				if(empty($arItem['OFFERS_PROP']))
 				{
-					$arItem['MIN_PRICE'] = COptimus::getMinPriceFromOffersExt(
+					$arItem['MIN_PRICE'] = $optimusInstance->getMinPriceFromOffersExt(
 						$arItem['OFFERS'],
 						$boolConvert ? $arResult['CONVERT_CURRENCY']['CURRENCY_ID'] : $strBaseCurrency
 					);

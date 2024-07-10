@@ -1,7 +1,9 @@
 <?if(!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED!==true)die();?>
 <?$this->setFrameMode(true);?>
 <?if( count( $arResult["ITEMS"] ) >= 1 ){
-	$injectId = 'sale_gift_product_'.$this->randString();?>
+    $optimusInstance = new COptimus();
+
+    $injectId = 'sale_gift_product_'.$this->randString();?>
 					<?
 					$elementEdit = CIBlock::GetArrayByID($arParams['IBLOCK_ID'], 'ELEMENT_EDIT');
 					$elementDelete = CIBlock::GetArrayByID($arParams['IBLOCK_ID'], 'ELEMENT_DELETE');
@@ -11,23 +13,23 @@
 						$this->AddEditAction($arItem['ID'], $arItem['EDIT_LINK'], $elementEdit);
 						$this->AddDeleteAction($arItem['ID'], $arItem['DELETE_LINK'], $elementDelete, $elementDeleteParams);
 						$arItem["strMainID"] = $this->GetEditAreaId($arItem['ID']);
-						$arItemIDs=COptimus::GetItemsIDs($arItem);
+						$arItemIDs=$optimusInstance->GetItemsIDs($arItem);
 
 						$strMeasure = '';
-						$totalCount = COptimus::GetTotalCount($arItem);
-						$arQuantityData = COptimus::GetQuantityArray($totalCount, $arItemIDs["ALL_ITEM_IDS"]);
+						$totalCount = $optimusInstance->GetTotalCount($arItem);
+						$arQuantityData = $optimusInstance->GetQuantityArray($totalCount, $arItemIDs["ALL_ITEM_IDS"]);
 						if(!$arItem["OFFERS"]){
 							if($arParams["SHOW_MEASURE"] == "Y" && $arItem["CATALOG_MEASURE"]){
 								$arMeasure = CCatalogMeasure::getList(array(), array("ID" => $arItem["CATALOG_MEASURE"]), false, false, array())->GetNext();
 								$strMeasure = $arMeasure["SYMBOL_RUS"];
 							}
-							$arAddToBasketData = COptimus::GetAddToBasketArray($arItem, $totalCount, $arParams["DEFAULT_COUNT"], $arParams["BASKET_URL"], false, $arItemIDs["ALL_ITEM_IDS"], 'small', $arParams);
+							$arAddToBasketData = $optimusInstance->GetAddToBasketArray($arItem, $totalCount, $arParams["DEFAULT_COUNT"], $arParams["BASKET_URL"], false, $arItemIDs["ALL_ITEM_IDS"], 'small', $arParams);
 						}
 						elseif($arItem["OFFERS"]){
 							$strMeasure = $arItem["MIN_PRICE"]["CATALOG_MEASURE_NAME"];
 							if(!$arItem['OFFERS_PROP']){
 
-								$arAddToBasketData = COptimus::GetAddToBasketArray($arItem["OFFERS"][0], $totalCount, $arParams["DEFAULT_COUNT"], $arParams["BASKET_URL"], false, $arItemIDs["ALL_ITEM_IDS"], 'small', $arParams);
+								$arAddToBasketData = $optimusInstance->GetAddToBasketArray($arItem["OFFERS"][0], $totalCount, $arParams["DEFAULT_COUNT"], $arParams["BASKET_URL"], false, $arItemIDs["ALL_ITEM_IDS"], 'small', $arParams);
 							}
 						}
 						?>
@@ -268,14 +270,14 @@
 											<div class="sku_props">
 												<div class="bx_catalog_item_scu wrapper_sku" id="<? echo $arItemIDs["ALL_ITEM_IDS"]['PROP_DIV']; ?>">
 													<?$arSkuTemplate = array();?>
-													<?$arSkuTemplate=COptimus::GetSKUPropsArray($arItem['OFFERS_PROPS_JS'], $arResult["SKU_IBLOCK_ID"], $arParams["DISPLAY_TYPE"], $arParams["OFFER_HIDE_NAME_PROPS"]);?>
+													<?$arSkuTemplate=$optimusInstance->GetSKUPropsArray($arItem['OFFERS_PROPS_JS'], $arResult["SKU_IBLOCK_ID"], $arParams["DISPLAY_TYPE"], $arParams["OFFER_HIDE_NAME_PROPS"]);?>
 													<?foreach ($arSkuTemplate as $code => $strTemplate){
 														if (!isset($arItem['OFFERS_PROP'][$code]))
 															continue;
 														echo '<div>', str_replace('#ITEM#_prop_', $arItemIDs["ALL_ITEM_IDS"]['PROP'], $strTemplate), '</div>';
 													}?>
 												</div>
-												<?$arItemJSParams=COptimus::GetSKUJSParams($arResult, $arParams, $arItem);?>
+												<?$arItemJSParams=$optimusInstance->GetSKUJSParams($arResult, $arParams, $arItem);?>
 
 												<script type="text/javascript">
 													var <? echo $arItemIDs["strObName"]; ?> = new JCCatalogSection(<? echo CUtil::PhpToJSObject($arItemJSParams, false, true); ?>);
@@ -303,7 +305,7 @@
 										<div class="offer_buy_block buys_wrapp woffers">
 											<?
 											$arItem["OFFERS_MORE"] = "Y";
-											$arAddToBasketData = COptimus::GetAddToBasketArray($arItem, $totalCount, $arParams["DEFAULT_COUNT"], $arParams["BASKET_URL"], false, $arItemIDs["ALL_ITEM_IDS"], 'small read_more1', $arParams);?>
+											$arAddToBasketData = $optimusInstance->GetAddToBasketArray($arItem, $totalCount, $arParams["DEFAULT_COUNT"], $arParams["BASKET_URL"], false, $arItemIDs["ALL_ITEM_IDS"], 'small read_more1', $arParams);?>
 											<!--noindex-->
 												<?=$arAddToBasketData["HTML"]?>
 											<!--/noindex-->

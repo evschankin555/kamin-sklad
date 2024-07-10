@@ -1,4 +1,5 @@
-<?
+<?php
+ini_set('display_errors', 1);
 require($_SERVER["DOCUMENT_ROOT"]."/bitrix/header.php");
 $APPLICATION->SetPageProperty("title", "Купить камин в #WF_CITY_ROD#. Интернет-магазин");
 $APPLICATION->SetPageProperty("keywords", "камины, купить камин, камины для дачи, камины для дома, продажа каминов, интернет-магазин каминов, kamin-sklad.ru, #WF_CITY_NAME#");

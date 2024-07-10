@@ -10,16 +10,20 @@ if (!Loader::includeModule("iblock"))
 
 $boolCatalog = Loader::includeModule("catalog");
 
+$usePropertyFeatures = Iblock\Model\PropertyFeature::isEnabledFeatures();
+
 $iblockExists = (!empty($arCurrentValues['IBLOCK_ID']) && (int)$arCurrentValues['IBLOCK_ID'] > 0);
 
 $arIBlockType = CIBlockParameters::GetIBlockTypes();
 
 $arIBlock = array();
-$iblockFilter = (
-	!empty($arCurrentValues['IBLOCK_TYPE'])
-	? array('TYPE' => $arCurrentValues['IBLOCK_TYPE'], 'ACTIVE' => 'Y')
-	: array('ACTIVE' => 'Y')
-);
+$iblockFilter = [
+	'ACTIVE' => 'Y',
+];
+if (!empty($arCurrentValues['IBLOCK_TYPE']))
+{
+	$iblockFilter['TYPE'] = $arCurrentValues['IBLOCK_TYPE'];
+}
 $rsIBlock = CIBlock::GetList(array('SORT' => 'ASC'), $iblockFilter);
 while ($arr = $rsIBlock->Fetch())
 	$arIBlock[$arr['ID']] = '['.$arr['ID'].'] '.$arr['NAME'];
@@ -48,7 +52,11 @@ if ($iblockExists)
 	unset($propertyCode, $propertyName, $property, $propertyIterator);
 }
 
-$arOffers = CIBlockPriceTools::GetOffersIBlock($arCurrentValues["IBLOCK_ID"]);
+$arOffers =
+	$iblockExists
+		? CIBlockPriceTools::GetOffersIBlock($arCurrentValues['IBLOCK_ID'])
+		: false
+;
 $OFFERS_IBLOCK_ID = is_array($arOffers)? $arOffers["OFFERS_IBLOCK_ID"]: 0;
 $arProperty_Offers = array();
 if ($OFFERS_IBLOCK_ID)
@@ -269,10 +277,16 @@ $arComponentParameters = array(
 	),
 );
 
+if ($usePropertyFeatures)
+{
+	unset($arComponentParameters['PARAMETERS']['PROPERTY_CODE']);
+	unset($arComponentParameters['PARAMETERS']['OFFERS_PROPERTY_CODE']);
+}
+
 if ($boolCatalog)
 {
 	$arComponentParameters["PARAMETERS"]['HIDE_NOT_AVAILABLE'] = array(
-		'NAME' => GetMessage('CP_BCCR_HIDE_NOT_AVAILABLE'),
+		'NAME' => GetMessage('CP_BCCR_HIDE_NOT_AVAILABLE_EXT'),
 		'TYPE' => 'CHECKBOX',
 		'DEFAULT' => 'N',
 	);

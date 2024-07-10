@@ -9,27 +9,56 @@ Loader::includeModule("iblock");
 Loader::includeModule("highloadblock");
 
 // get current section & element
+
 global $OptimusSectionID;
 $arSection = $arElement = array();
-if($arResult["VARIABLES"]["SECTION_ID"] > 0){
-	$arSection = COptimusCache::CIBlockSection_GetList(array('CACHE' => array("MULTI" =>"N", "TAG" => COptimusCache::GetIBlockCacheTag($arParams["IBLOCK_ID"]))), array('GLOBAL_ACTIVE' => 'Y', "ID" => $arResult["VARIABLES"]["SECTION_ID"], "IBLOCK_ID" => $arParams["IBLOCK_ID"]), false, array("ID", "IBLOCK_ID", "UF_TIZERS", "NAME"));
-}
-elseif(strlen(trim($arResult["VARIABLES"]["SECTION_CODE"])) > 0){
-	$arSection = COptimusCache::CIBlockSection_GetList(array('CACHE' => array("MULTI" =>"N", "TAG" => COptimusCache::GetIBlockCacheTag($arParams["IBLOCK_ID"]))), array('GLOBAL_ACTIVE' => 'Y', "=CODE" => $arResult["VARIABLES"]["SECTION_CODE"], "IBLOCK_ID" => $arParams["IBLOCK_ID"]), false, array("ID", "IBLOCK_ID", "UF_TIZERS", "NAME"));
+
+// Создаем экземпляр класса COptimusCache
+$optimusCacheInstance = new COptimusCache();
+
+if ($arResult["VARIABLES"]["SECTION_ID"] > 0) {
+    $arSection = $optimusCacheInstance->CIBlockSection_GetList(
+        array('CACHE' => array("MULTI" => "N", "TAG" => $optimusCacheInstance->GetIBlockCacheTag($arParams["IBLOCK_ID"]))),
+        array('GLOBAL_ACTIVE' => 'Y', "ID" => $arResult["VARIABLES"]["SECTION_ID"], "IBLOCK_ID" => $arParams["IBLOCK_ID"]),
+        false,
+        array("ID", "IBLOCK_ID", "UF_TIZERS", "NAME")
+    );
+} elseif (strlen(trim($arResult["VARIABLES"]["SECTION_CODE"])) > 0) {
+    $arSection = $optimusCacheInstance->CIBlockSection_GetList(
+        array('CACHE' => array("MULTI" => "N", "TAG" => $optimusCacheInstance->GetIBlockCacheTag($arParams["IBLOCK_ID"]))),
+        array('GLOBAL_ACTIVE' => 'Y', "=CODE" => $arResult["VARIABLES"]["SECTION_CODE"], "IBLOCK_ID" => $arParams["IBLOCK_ID"]),
+        false,
+        array("ID", "IBLOCK_ID", "UF_TIZERS", "NAME")
+    );
 }
 
-if($arResult["VARIABLES"]["ELEMENT_ID"] > 0){
-	$arElement = COptimusCache::CIBLockElement_GetList(array('CACHE' => array("MULTI" =>"N", "TAG" => COptimusCache::GetIBlockCacheTag($arParams["IBLOCK_ID"]))), array("IBLOCK_ID" => $arParams["IBLOCK_ID"], "ACTIVE"=>"Y", "ID" => $arResult["VARIABLES"]["ELEMENT_ID"]), false, false, array("ID", "IBLOCK_ID", "IBLOCK_SECTION_ID", "NAME", "PREVIEW_TEXT", "PREVIEW_PICTURE", "DETAIL_PICTURE", "PROPERTY_REGIONS"));
+if ($arResult["VARIABLES"]["ELEMENT_ID"] > 0) {
+    $arElement = $optimusCacheInstance->CIBLockElement_GetList(
+        array('CACHE' => array("MULTI" => "N", "TAG" => $optimusCacheInstance->GetIBlockCacheTag($arParams["IBLOCK_ID"]))),
+        array("IBLOCK_ID" => $arParams["IBLOCK_ID"], "ACTIVE" => "Y", "ID" => $arResult["VARIABLES"]["ELEMENT_ID"]),
+        false,
+        false,
+        array("ID", "IBLOCK_ID", "IBLOCK_SECTION_ID", "NAME", "PREVIEW_TEXT", "PREVIEW_PICTURE", "DETAIL_PICTURE", "PROPERTY_REGIONS")
+    );
+} elseif (strlen(trim($arResult["VARIABLES"]["ELEMENT_CODE"])) > 0) {
+    $arElement = $optimusCacheInstance->CIBLockElement_GetList(
+        array('CACHE' => array("MULTI" => "N", "TAG" => $optimusCacheInstance->GetIBlockCacheTag($arParams["IBLOCK_ID"]))),
+        array("IBLOCK_ID" => $arParams["IBLOCK_ID"], "ACTIVE" => "Y", "=CODE" => $arResult["VARIABLES"]["ELEMENT_CODE"]),
+        false,
+        false,
+        array("ID", "IBLOCK_ID", "IBLOCK_SECTION_ID", "NAME", "PREVIEW_TEXT", "PREVIEW_PICTURE", "DETAIL_PICTURE", "PROPERTY_REGIONS")
+    );
 }
-elseif(strlen(trim($arResult["VARIABLES"]["ELEMENT_CODE"])) > 0){
-	$arElement = COptimusCache::CIBLockElement_GetList(array('CACHE' => array("MULTI" =>"N", "TAG" => COptimusCache::GetIBlockCacheTag($arParams["IBLOCK_ID"]))), array("IBLOCK_ID" => $arParams["IBLOCK_ID"], "ACTIVE"=>"Y", "=CODE" => $arResult["VARIABLES"]["ELEMENT_CODE"]), false, false, array("ID", "IBLOCK_ID", "IBLOCK_SECTION_ID", "NAME", "PREVIEW_TEXT", "PREVIEW_PICTURE", "DETAIL_PICTURE", "PROPERTY_REGIONS"));
 
-}
-
-if(!$arSection){
-	if($arElement["IBLOCK_SECTION_ID"]){
-		$arSection = COptimusCache::CIBlockSection_GetList(array('CACHE' => array("MULTI" =>"N", "TAG" => COptimusCache::GetIBlockCacheTag($arParams["IBLOCK_ID"]))), array('GLOBAL_ACTIVE' => 'Y', "ID" => $arElement["IBLOCK_SECTION_ID"], "IBLOCK_ID" => $arElement["IBLOCK_ID"]), false, array("ID", "IBLOCK_ID", "UF_TIZERS", "NAME"));
-	}
+if (!$arSection) {
+    if ($arElement["IBLOCK_SECTION_ID"]) {
+        $arSection = $optimusCacheInstance->CIBlockSection_GetList(
+            array('CACHE' => array("MULTI" => "N", "TAG" => $optimusCacheInstance->GetIBlockCacheTag($arParams["IBLOCK_ID"]))),
+            array('GLOBAL_ACTIVE' => 'Y', "ID" => $arElement["IBLOCK_SECTION_ID"], "IBLOCK_ID" => $arElement["IBLOCK_ID"]),
+            false,
+            array("ID", "IBLOCK_ID", "UF_TIZERS", "NAME")
+        );
+    }
 }
 
 if (!empty($arElement["PROPERTY_REGIONS_VALUE"]))
@@ -249,12 +278,12 @@ if ($arNavParams){
 
 <?$arAllValues=$arSimilar=$arAccessories=array();
 /*similar goods*/
-$arExpValues=COptimusCache::CIBlockElement_GetProperty($arParams["IBLOCK_ID"], $ElementID, array("CACHE" => array("TAG" =>COptimusCache::GetIBlockCacheTag($arParams["IBLOCK_ID"]))), array("CODE" => "EXPANDABLES"));
+$arExpValues=$optimusCacheInstance->CIBlockElement_GetProperty($arParams["IBLOCK_ID"], $ElementID, array("CACHE" => array("TAG" =>$optimusCacheInstance->GetIBlockCacheTag($arParams["IBLOCK_ID"]))), array("CODE" => "EXPANDABLES"));
 if($arExpValues){
 	$arAllValues["EXPANDABLES"]=$arExpValues;
 }
 /*accessories goods*/
-$arAccessories=COptimusCache::CIBlockElement_GetProperty($arParams["IBLOCK_ID"], $ElementID, array("CACHE" => array("TAG" =>COptimusCache::GetIBlockCacheTag($arParams["IBLOCK_ID"]))), array("CODE" => "ASSOCIATED"));
+$arAccessories=$optimusCacheInstance->CIBlockElement_GetProperty($arParams["IBLOCK_ID"], $ElementID, array("CACHE" => array("TAG" =>$optimusCacheInstance->GetIBlockCacheTag($arParams["IBLOCK_ID"]))), array("CODE" => "ASSOCIATED"));
 if($arAccessories){
 	$arAllValues["ASSOCIATED"]=$arAccessories;
 }
@@ -263,7 +292,7 @@ else
     global $simularArr;
     if ((float)$simularArr["MINIMUM_PRICE"]>0)
     {
-        $arElements = COptimusCache::CIBLockElement_GetList(array('CACHE' => array("MULTI" =>"Y", "TAG" => COptimusCache::GetIBlockCacheTag($arParams["IBLOCK_ID"]))), array("IBLOCK_ID" => $arParams["IBLOCK_ID"], "ACTIVE"=>"Y", "!ID" => $ElementID, "SECTION_ID" => $simularArr["IBLOCK_SECTION_ID"], ">PROPERTY_MINIMUM_PRICE" => $simularArr["MINIMUM_PRICE"]*0.9,"<PROPERTY_MINIMUM_PRICE" => $simularArr["MINIMUM_PRICE"]*1.1), false, Array("nTopCount"=>12), array("ID"));               
+        $arElements = $optimusCacheInstance->CIBLockElement_GetList(array('CACHE' => array("MULTI" =>"Y", "TAG" => $optimusCacheInstance->GetIBlockCacheTag($arParams["IBLOCK_ID"]))), array("IBLOCK_ID" => $arParams["IBLOCK_ID"], "ACTIVE"=>"Y", "!ID" => $ElementID, "SECTION_ID" => $simularArr["IBLOCK_SECTION_ID"], ">PROPERTY_MINIMUM_PRICE" => $simularArr["MINIMUM_PRICE"]*0.9,"<PROPERTY_MINIMUM_PRICE" => $simularArr["MINIMUM_PRICE"]*1.1), false, Array("nTopCount"=>12), array("ID"));               
         foreach($arElements as $sims):
 	        $arAccessories[]=$sims["ID"];
             $arAllValues["ASSOCIATED"][]=$sims["ID"];

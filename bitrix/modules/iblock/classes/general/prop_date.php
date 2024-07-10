@@ -1,80 +1,192 @@
 <?php
-use Bitrix\Main\Localization\Loc,
-	Bitrix\Iblock;
 
-Loc::loadMessages(__FILE__);
+use Bitrix\Main\Context;
+use Bitrix\Main\Localization\Loc;
+use Bitrix\Iblock;
 
 class CIBlockPropertyDate extends CIBlockPropertyDateTime
 {
-	const USER_TYPE = 'Date';
+	/** @deprecated */
+	public const USER_TYPE = Iblock\PropertyTable::USER_TYPE_DATE;
+
+	private const INTERNAL_FORMAT = 'YYYY-MM-DD';
 
 	public static function GetUserTypeDescription()
 	{
-		return array(
-			"PROPERTY_TYPE" => Iblock\PropertyTable::TYPE_STRING,
-			"USER_TYPE" => self::USER_TYPE,
-			"DESCRIPTION" => Loc::getMessage("IBLOCK_PROP_DATE_DESC"),
+		return [
+			'PROPERTY_TYPE' => Iblock\PropertyTable::TYPE_STRING,
+			'USER_TYPE' => Iblock\PropertyTable::USER_TYPE_DATE,
+			'DESCRIPTION' => Loc::getMessage('IBLOCK_PROP_DATE_DESC'),
 			//optional handlers
-			"GetPublicViewHTML" => array(__CLASS__, "GetPublicViewHTML"),
-			"GetPublicEditHTML" => array(__CLASS__, "GetPublicEditHTML"),
-			"GetAdminListViewHTML" => array(__CLASS__, "GetAdminListViewHTML"),
-			"GetPropertyFieldHtml" => array(__CLASS__, "GetPropertyFieldHtml"),
-			"CheckFields" => array(__CLASS__, "CheckFields"),
-			"ConvertToDB" => array(__CLASS__, "ConvertToDB"),
-			"ConvertFromDB" => array(__CLASS__, "ConvertFromDB"),
-			"GetSettingsHTML" => array(__CLASS__, "GetSettingsHTML"),
-			"GetAdminFilterHTML" => array(__CLASS__, "GetAdminFilterHTML"),
-			"GetPublicFilterHTML" => array(__CLASS__, "GetPublicFilterHTML"),
-			"AddFilterFields" => array(__CLASS__, "AddFilterFields"),
+			'GetPublicViewHTML' => [__CLASS__, 'GetPublicViewHTML'],
+			'GetPublicEditHTML' => [__CLASS__, 'GetPublicEditHTML'],
+			'GetPublicEditHTMLMulty' => [__CLASS__, 'GetPublicEditHTMLMulty'],
+			'GetAdminListViewHTML' => [__CLASS__, 'GetAdminListViewHTML'],
+			'GetPropertyFieldHtml' => [__CLASS__, 'GetPropertyFieldHtml'],
+			'CheckFields' => [__CLASS__, 'CheckFields'],
+			'ConvertToDB' => [__CLASS__, 'ConvertToDB'],
+			'ConvertFromDB' => [__CLASS__, 'ConvertFromDB'],
+			'GetSettingsHTML' => [__CLASS__, 'GetSettingsHTML'],
+			'GetAdminFilterHTML' => [__CLASS__, 'GetAdminFilterHTML'],
+			'GetPublicFilterHTML' => [__CLASS__, 'GetPublicFilterHTML'],
+			'AddFilterFields' => [__CLASS__, 'AddFilterFields'],
+			'GetUIFilterProperty' => [__CLASS__, 'GetUIFilterProperty'],
+			'GetUIEntityEditorProperty' => [__CLASS__, 'GetUIEntityEditorProperty'],
+			//"GetORMFields" => array(__CLASS__, "GetORMFields"),
+		];
+	}
+
+	/**
+	 * @param \Bitrix\Main\ORM\Entity $valueEntity
+	 * @param Iblock\Property         $property
+	 *
+	 * @throws \Bitrix\Main\ArgumentException
+	 * @throws \Bitrix\Main\SystemException
+	 */
+	public static function GetORMFields($valueEntity, $property)
+	{
+		$valueEntity->addField(
+			(new \Bitrix\Main\ORM\Fields\DateField('DATE'))
+				->configureFormat(parent::FORMAT_SHORT)
+				->configureColumnName($valueEntity->getField('VALUE')->getColumnName())
 		);
 	}
 
 	public static function ConvertToDB($arProperty, $value)
 	{
-		if (strlen($value["VALUE"])>0)
-			$value["VALUE"] = CDatabase::FormatDate($value["VALUE"], CLang::GetDateFormat("SHORT"), "YYYY-MM-DD");
+		$dateTimeValue = (string)($value['VALUE'] ?? '');
+		if ($dateTimeValue !== '')
+		{
+			if (!static::checkInternalFormatValue($dateTimeValue))
+			{
+				$value['VALUE'] = CDatabase::FormatDate(
+					$dateTimeValue,
+					CLang::GetDateFormat('SHORT'),
+					self::INTERNAL_FORMAT
+				);
+			}
+			else
+			{
+				$value['VALUE'] = $dateTimeValue;
+			}
+		}
 
 		return $value;
 	}
 
 	public static function ConvertFromDB($arProperty, $value, $format = '')
 	{
-		if(strlen($value["VALUE"])>0)
-			$value["VALUE"] = CDatabase::FormatDate($value["VALUE"], "YYYY-MM-DD", CLang::GetDateFormat("SHORT"));
+		$dateTimeValue = (string)($value['VALUE'] ?? '');
+		if ($dateTimeValue !== '')
+		{
+			$value['VALUE'] = CDatabase::FormatDate(
+				$dateTimeValue,
+				self::INTERNAL_FORMAT,
+				CLang::GetDateFormat('SHORT')
+			);
+		}
 
 		return $value;
 	}
 
 	public static function GetPublicEditHTML($arProperty, $value, $strHTMLControlName)
 	{
-		/** @var CMain */
+		/** @var CMain $APPLICATION */
 		global $APPLICATION;
 
-		$s = '<input type="text" name="'.htmlspecialcharsbx($strHTMLControlName["VALUE"]).'" size="25" value="'.htmlspecialcharsbx($value["VALUE"]).'" />';
 		ob_start();
 		$APPLICATION->IncludeComponent(
-			'bitrix:main.calendar',
-			'',
-			array(
-				'FORM_NAME' => $strHTMLControlName["FORM_NAME"],
-				'INPUT_NAME' => $strHTMLControlName["VALUE"],
-				'INPUT_VALUE' => $value["VALUE"],
-				'SHOW_TIME' => "N",
-			),
+			'bitrix:iblock.property.field.public.edit',
+			'date',
+			[
+				'NAME' => $strHTMLControlName['VALUE'],
+				'VALUE' => static::prepareMultiValue($value),
+				'PROPERTY' => $arProperty,
+				'SHOW_TIME' => 'N',
+			],
 			null,
-			array('HIDE_ICONS' => 'Y')
+			[
+				'HIDE_ICONS' => 'Y',
+			]
 		);
-		$s .= ob_get_contents();
+		$result = ob_get_contents();
 		ob_end_clean();
-		return  $s;
+
+		return $result;
+	}
+
+	public static function GetPublicEditHTMLMulty($arProperty, $value, $strHTMLControlName): string
+	{
+		/** @var CMain $APPLICATION */
+		global $APPLICATION;
+
+		ob_start();
+		$APPLICATION->IncludeComponent(
+			'bitrix:iblock.property.field.public.edit',
+			'date',
+			[
+				'NAME' => $strHTMLControlName['VALUE'],
+				'VALUE' => static::prepareMultiValue($value),
+				'PROPERTY' => $arProperty,
+				'SHOW_TIME' => 'N',
+			],
+			null,
+			[
+				'HIDE_ICONS' => 'Y',
+			]
+		);
+		$result = ob_get_contents();
+		ob_end_clean();
+
+		return $result;
+
 	}
 
 	public static function GetPropertyFieldHtml($arProperty, $value, $strHTMLControlName)
 	{
-		return  CAdminCalendar::CalendarDate($strHTMLControlName["VALUE"], $value["VALUE"], 20, false).
-		($arProperty["WITH_DESCRIPTION"]=="Y" && '' != trim($strHTMLControlName["DESCRIPTION"]) ?
-			'&nbsp;<input type="text" size="20" name="'.$strHTMLControlName["DESCRIPTION"].'" value="'.htmlspecialcharsbx($value["DESCRIPTION"]).'">'
-			:''
-		);
+		return static::getPropertyFormField($arProperty, $value, $strHTMLControlName, false);
+	}
+
+	/**
+	 * @param array $property
+	 * @param array $control
+	 * @param array &$fields
+	 * @return void
+	 */
+	public static function GetUIFilterProperty($property, $control, &$fields)
+	{
+		parent::GetUIFilterProperty($property, $control, $fields);
+		unset($fields['time'], $fields['data']);
+	}
+
+	/**
+	 * @param $settings
+	 * @param $value
+	 *
+	 * @return array
+	 */
+	public static function GetUIEntityEditorProperty($settings, $value)
+	{
+		$culture = Context::getCurrent()->getCulture();
+
+		$dateTimeResult = parent::GetUIEntityEditorProperty($settings, $value);
+		$dateTimeResult['data'] = [
+			'enableTime' => false,
+			'dateViewFormat' =>  $culture->getLongDateFormat(),
+		];
+
+		return $dateTimeResult;
+	}
+
+	protected static function checkInternalFormatValue(string $value): bool
+	{
+		if ($value === '')
+		{
+			return false;
+		}
+
+		$correctValue = date_parse_from_format(parent::FORMAT_SHORT, $value);
+
+		return ($correctValue['warning_count'] === 0 && $correctValue['error_count'] === 0);
 	}
 }

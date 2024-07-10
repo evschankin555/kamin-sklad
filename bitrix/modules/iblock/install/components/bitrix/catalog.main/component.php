@@ -1,5 +1,9 @@
-<?
-if(!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED!==true) die();
+<?php
+
+if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED !== true)
+{
+	die();
+}
 /** @var CBitrixComponent $this */
 /** @var array $arParams */
 /** @var array $arResult */
@@ -23,7 +27,7 @@ $arParams["IBLOCK_URL"]=trim($arParams["IBLOCK_URL"]);
 /*************************************************************************
 			Work with cache
 *************************************************************************/
-$arResult["ITEMS"] = array();
+$arResult["ITEMS"] = [];
 
 if($this->StartResultCache(false, ($arParams["CACHE_GROUPS"]==="N"? false: $USER->GetGroups())))
 {
@@ -34,16 +38,16 @@ if($this->StartResultCache(false, ($arParams["CACHE_GROUPS"]==="N"? false: $USER
 		return;
 	}
 	//WHERE
-	$arFilter = array(
+	$arFilter = [
 		"TYPE" => $arParams["IBLOCK_TYPE"],
 		"SITE_ID" => SITE_ID,
 		"ACTIVE" => "Y",
-	);
+	];
 	//ORDER BY
-	$arSort = array(
+	$arSort = [
 		"SORT" => "ASC",
 		"NAME" => "ASC",
-	);
+	];
 
 	$rsIBlocks = CIBlock::GetList($arSort, $arFilter);
 
@@ -54,7 +58,7 @@ if($this->StartResultCache(false, ($arParams["CACHE_GROUPS"]==="N"? false: $USER
 		$arIBlock["~LIST_PAGE_URL"] = str_replace(
 			array("#SERVER_NAME#", "#SITE_DIR#", "#IBLOCK_TYPE_ID#", "#IBLOCK_ID#", "#IBLOCK_CODE#", "#IBLOCK_EXTERNAL_ID#", "#CODE#"),
 			array(SITE_SERVER_NAME, SITE_DIR, $arIBlock["IBLOCK_TYPE_ID"], $arIBlock["ID"], $arIBlock["CODE"], $arIBlock["EXTERNAL_ID"], $arIBlock["CODE"]),
-			strlen($arParams["IBLOCK_URL"])? trim($arParams["~IBLOCK_URL"]): $arIBlock["~LIST_PAGE_URL"]
+			$arParams["IBLOCK_URL"] <> ''? trim($arParams["~IBLOCK_URL"]) : $arIBlock["~LIST_PAGE_URL"]
 		);
 		$arIBlock["~LIST_PAGE_URL"] = preg_replace("'/+'s", "/", $arIBlock["~LIST_PAGE_URL"]);
 		$arIBlock["LIST_PAGE_URL"] = htmlspecialcharsbx($arIBlock["~LIST_PAGE_URL"]);
@@ -64,9 +68,8 @@ if($this->StartResultCache(false, ($arParams["CACHE_GROUPS"]==="N"? false: $USER
 	$this->IncludeComponentTemplate();
 }
 
-if(count($arResult["ITEMS"])>0 && $USER->IsAuthorized())
+if (!empty($arResult["ITEMS"]) && $USER->IsAuthorized())
 {
 	if($APPLICATION->GetShowIncludeAreas() && CModule::IncludeModule("iblock"))
 		$this->AddIncludeAreaIcons(CIBlock::ShowPanel(0, 0, 0, $arParams["IBLOCK_TYPE"], true));
 }
-?>

@@ -1,9 +1,15 @@
-<?$arResult = COptimus::getChilds2($arResult);
+<?php
+// Создаем экземпляр класса COptimus
+$optimusInstance = new COptimus();
 
-if($arResult){
-	foreach($arResult as $key=>$arItem){
-		if($arItem["CHILD"]){
-			$arResult[$key]["CHILD"]=COptimus::unique_multidim_array($arItem["CHILD"], "TEXT");
-		}
-	}
-}?>
+// Вызываем нестатический метод через экземпляр класса
+$arResult = $optimusInstance->getChilds2($arResult);
+
+if ($arResult) {
+    foreach ($arResult as $key => $arItem) {
+        if ($arItem["CHILD"]) {
+            $arResult[$key]["CHILD"] = $optimusInstance->unique_multidim_array($arItem["CHILD"], "TEXT");
+        }
+    }
+}
+?>

@@ -20,7 +20,7 @@ class COptimus{
 
 	private static $arMetaParams = array();
 
-    function ShowPanel(){
+    static function  ShowPanel(){
         if($GLOBALS["USER"]->IsAdmin() && COption::GetOptionString("main", "wizard_solution", "", SITE_ID) == self::solutionName){
             $GLOBALS["APPLICATION"]->SetAdditionalCSS("/bitrix/wizards/".self::partnerName."/".self::solutionName."/css/panel.css");
             $arMenu = array(
@@ -45,7 +45,7 @@ class COptimus{
         }
     }
 
-    function BeforeSendEvent(\Bitrix\Main\Event $event){
+    static function  BeforeSendEvent(\Bitrix\Main\Event $event){
 		if(isset($_REQUEST["ONE_CLICK_BUY"]) && method_exists('\Bitrix\Sale\Compatible\EventCompatibility', 'setDisableMailSend')){
 			\Bitrix\Sale\Compatible\EventCompatibility::setDisableMailSend(true);
 			if(method_exists('\Bitrix\Sale\Notify', 'setNotifyDisable'))
@@ -53,10 +53,10 @@ class COptimus{
 		}
 	}
 
-	function Check(){
+	static function  Check(){
 	}
 
-	function Start($siteID){
+	static function  Start($siteID){
 		global  $APPLICATION, $SITE_THEME, $TEMPLATE_OPTIONS, $THEME_SWITCHER, $STARTTIME;
 		$STARTTIME = time() * 1000;
 		$SITE_THEME = COption::GetOptionString(self::moduleID, "COLOR_THEME", 'BLUE', $siteID);
@@ -204,7 +204,20 @@ class COptimus{
 		global $APPLICATION;
 		static $arBanner;
 		if($arBanner===NULL){
-			$arItems = COptimusCache::CIBLockElement_GetList(array("SORT" => "ASC", 'CACHE' => array('TAG' => COptimusCache::GetIBlockCacheTag(COptimusCache::$arIBlocks[$siteID]["aspro_optimus_adv"]["aspro_optimus_bg_images"][0]))), array('IBLOCK_ID' => COptimusCache::$arIBlocks[$siteID]["aspro_optimus_adv"]["aspro_optimus_bg_images"][0], "ACTIVE"=>"Y"), false, false, array("ID", "NAME", "PREVIEW_PICTURE", "PROPERTY_URL", "PROPERTY_FIXED_BANNER", "PROPERTY_URL_NOT_SHOW"));
+            $cache = new COptimusCache(); // Создаем объект класса COptimusCache
+
+// Пример вызова метода GetIBlockCacheTag() на объекте $cache
+            $cacheTag = $cache->GetIBlockCacheTag(COptimusCache::$arIBlocks[$siteID]["aspro_optimus_adv"]["aspro_optimus_bg_images"][0]);
+
+// Далее можно использовать $cacheTag в вашем коде
+            $arItems = $cache->CIBlockElement_GetList(
+                array("SORT" => "ASC", 'CACHE' => array('TAG' => $cacheTag)),
+                array('IBLOCK_ID' => COptimusCache::$arIBlocks[$siteID]["aspro_optimus_adv"]["aspro_optimus_bg_images"][0], "ACTIVE"=>"Y"),
+                false,
+                false,
+                array("ID", "NAME", "PREVIEW_PICTURE", "PROPERTY_URL", "PROPERTY_FIXED_BANNER", "PROPERTY_URL_NOT_SHOW")
+            );
+
 			$arBanner=array();
 			if($arItems){
 				$curPage=$APPLICATION->GetCurPage();
@@ -251,7 +264,7 @@ class COptimus{
 		return $arBanner;
 	}
 
-	function showBgImage($siteID){
+	static function  showBgImage($siteID){
 		global $APPLICATION;
 		$arBanner=self::checkBgImage($siteID);
 		if($arBanner){
@@ -266,7 +279,7 @@ class COptimus{
 		return true;
 	}
 
-	function ShowLogo(){
+	static function  ShowLogo(){
 		global $arSite, $TEMPLATE_OPTIONS;
 		$image=($TEMPLATE_OPTIONS["LOGO_IMAGE"]["CURRENT_IMG"] ? $TEMPLATE_OPTIONS["LOGO_IMAGE"]["CURRENT_IMG"] : SITE_DIR."include/logo.png");?>
 		<a href="<?=SITE_DIR?>"><img src="<?=$image?>" alt="<?=$arSite["SITE_NAME"]?>" title="<?=$arSite["SITE_NAME"]?>" /></a>
@@ -359,7 +372,7 @@ class COptimus{
 		return $result;
 	}
 
-	function GenerateMinCss($file){
+	static function  GenerateMinCss($file){
 		if(file_exists($file)){
 			$content = @file_get_contents($file);
 			if($content !== false){
@@ -384,7 +397,7 @@ class COptimus{
 		return false;
 	}
 
-	function GenerateThemes($siteID){
+	static function  GenerateThemes($siteID){
 		global $SITE_THEME, $TEMPLATE_OPTIONS, $THEME_SWITCHER;
 		$arBaseColors = $TEMPLATE_OPTIONS['COLOR_THEME']['VALUES'];
 		$arBaseBgColors = $TEMPLATE_OPTIONS['BGCOLOR_THEME']['VALUES'];
@@ -483,7 +496,7 @@ class COptimus{
 		}
 	}
 
-	function getChilds($input, &$start = 0, $level = 0){
+	static function  getChilds($input, &$start = 0, $level = 0){
 		$childs = array();
 
 		if(!$level){
@@ -517,7 +530,7 @@ class COptimus{
 		return $childs;
 	}
 
-	function unique_multidim_array($array, $key) {
+	static function  unique_multidim_array($array, $key) {
 	    $temp_array = array();
 	    $i = 0;
 	    $key_array = array();
@@ -532,7 +545,7 @@ class COptimus{
 	    return $temp_array;
 	}
 
-	function convertArray($array, $charset){
+	static function  convertArray($array, $charset){
 		global $APPLICATION;
 	    if(is_array($array) && $array){
 		    foreach($array as $key=>$arVal) {
@@ -546,7 +559,7 @@ class COptimus{
 	    return $array;
 	}
 
-	function getChilds2($input, &$start = 0, $level = 0){
+	static function  getChilds2($input, &$start = 0, $level = 0){
 		static $arIblockItemsMD5 = array();
 
 		if(!$level){
@@ -612,7 +625,7 @@ class COptimus{
 		return $childs;
 	}
 
-	function getSectionChilds($PSID, &$arSections, &$arSectionsByParentSectionID, &$arItemsBySectionID, &$aMenuLinksExt){
+	static function  getSectionChilds($PSID, &$arSections, &$arSectionsByParentSectionID, &$arItemsBySectionID, &$aMenuLinksExt){
 		if($arSections && is_array($arSections)){
 			foreach($arSections as $arSection){
 				if($arSection['IBLOCK_SECTION_ID'] == $PSID){
@@ -644,7 +657,7 @@ class COptimus{
 		}
 	}
 
-	function GetDirMenuParametrs($dir){
+	static function  GetDirMenuParametrs($dir){
 		if(strlen($dir)){
 			$file = str_replace('//', '/', $dir.'/.section.php');
 			if(file_exists($file)){
@@ -677,7 +690,7 @@ class COptimus{
 		}
 	}
 
-	function getChainNeighbors($curSectionID, $chainPath){
+	static function  getChainNeighbors($curSectionID, $chainPath){
 		static $arSections, $arSectionsIDs, $arSubSections;
 		$arResult = array();
 
@@ -725,7 +738,7 @@ class COptimus{
 		return $arResult;
 	}
 
-	function drawFormField($FIELD_SID, $arQuestion){
+	static function  drawFormField($FIELD_SID, $arQuestion){
 		?>
 		<?$arQuestion["HTML_CODE"] = str_replace('name=', 'data-sid="'.$FIELD_SID.'" name=', $arQuestion["HTML_CODE"]);?>
 		<?$arQuestion["HTML_CODE"] = str_replace('left', '', $arQuestion["HTML_CODE"]);?>
@@ -752,7 +765,7 @@ class COptimus{
 		<?
 	}
 
-	function GetValidFormIDForSite(&$form_id){
+	static function  GetValidFormIDForSite(&$form_id){
 		if(!is_numeric($form_id) && !in_array($form_id, array('auth', 'one_click_buy'))){
 			CModule::IncludeModule('form');
 			$rsForm = CForm::GetList($by = "id", $order = "asc", array("ACTIVE" => "Y", "SID" => $form_id, "SITE" => array(SITE_ID)), $is_filtered);
@@ -764,7 +777,7 @@ class COptimus{
 		return $form_id;
 	}
 
-	function CheckTypeCount($totalCount){
+	static function  CheckTypeCount($totalCount){
 		if(is_float($totalCount)){
 			return floatval($totalCount);
 		}
@@ -773,7 +786,7 @@ class COptimus{
 		}
 	}
 
-	function GetTotalCount(&$arItem){
+	static function  GetTotalCount(&$arItem){
 		$totalCount = 0;
 		if($arItem["OFFERS"]){
 			foreach($arItem["OFFERS"] as $arOffer){
@@ -787,7 +800,7 @@ class COptimus{
 		return self::CheckTypeCount($totalCount);
 	}
 
-	function GetQuantityArray($totalCount, $arItemIDs = array(), $useStoreClick="N"){
+	static function  GetQuantityArray($totalCount, $arItemIDs = array(), $useStoreClick="N"){
 		static $arQuantityOptions, $arQuantityRights;
 		if($arQuantityOptions === NULL){
 			$arQuantityOptions = array(
@@ -885,7 +898,7 @@ class COptimus{
 		return array("OPTIONS" => $arQuantityOptions, "RIGHTS" => $arQuantityRights, "TEXT" => $totalText, "HTML" => $totalHTMLs);
 	}
 
-	function GetAvailiableStore($totalCount = 0, $arItemIDs=array(), $detail=false){
+	static function  GetAvailiableStore($totalCount = 0, $arItemIDs=array(), $detail=false){
 		static $arQuantityOptions;
 		if($arQuantityOptions === NULL){
 			$arQuantityOptions = array(
@@ -910,7 +923,7 @@ class COptimus{
 		return array( "OPTIONS" => $arQuantityOptions, "HTML" => $totalHTML );
 	}
 
-	function GetPropertyViewType($IBLOCK_ID){
+	static function  GetPropertyViewType($IBLOCK_ID){
 		global $DB;
 		$IBLOCK_ID = intval($IBLOCK_ID);
 		$SECTION_ID=64;
@@ -979,7 +992,7 @@ class COptimus{
 		return $result;
 	}
 
-	function GetSKUPropsArray(&$arSkuProps, $iblock_id=0, $type_view="list", $hide_title_props="N", $group_iblock_id="N"){
+	static function  GetSKUPropsArray(&$arSkuProps, $iblock_id=0, $type_view="list", $hide_title_props="N", $group_iblock_id="N"){
 		$arSkuTemplate = array();
 		$class_title=($hide_title_props=="Y" ? "hide_class" : "show_class");
 		$class_title.=' bx_item_section_name';
@@ -1151,7 +1164,7 @@ class COptimus{
 		return $arSkuTemplate;
 	}
 
-	function GetItemsIDs($arItem, $detail="N"){
+	static function  GetItemsIDs($arItem, $detail="N"){
 		$arAllIDs=array();
 		$arAllIDs["strMainID"] = $arItem['strMainID'];
 		$arAllIDs["strObName"] = 'ob'.preg_replace("/[^a-zA-Z0-9_]/", "x", $arAllIDs["strMainID"]);
@@ -1240,7 +1253,7 @@ class COptimus{
 		return $arAllIDs;
 	}
 
-	function GetSKUJSParams($arResult, $arParams, $arItem, $detail="N", $group_iblock_id="N"){
+	static function  GetSKUJSParams($arResult, $arParams, $arItem, $detail="N", $group_iblock_id="N"){
 		$arSkuProps = array();
 
 		if($group_iblock_id=="Y"){
@@ -1444,7 +1457,7 @@ class COptimus{
 		return $arJSParams;
 	}
 
-	function GetAddToBasketArray(&$arItem, $totalCount = 0, $defaultCount = 1, $basketUrl = '', $bDetail = false, $arItemIDs = array(), $class_btn = "small", $arParams=array()){
+	static function  GetAddToBasketArray(&$arItem, $totalCount = 0, $defaultCount = 1, $basketUrl = '', $bDetail = false, $arItemIDs = array(), $class_btn = "small", $arParams=array()){
 		static $arAddToBasketOptions, $bUserAuthorized;
 		if($arAddToBasketOptions === NULL){
 			$arAddToBasketOptions = array(
@@ -1593,7 +1606,7 @@ class COptimus{
 		return array("OPTIONS" => $arAddToBasketOptions, "TEXT" => $buttonText, "HTML" => $buttonHTML, "ACTION" => $buttonACTION, "RATIO_ITEM" => $ratio, "MIN_QUANTITY_BUY" => $quantity, "MAX_QUANTITY_BUY" => $max_quantity);
 	}
 
-	function checkVersionExt($template="main", $module="catalog"){
+	static function  checkVersionExt($template="main", $module="catalog"){
 		if($info = CModule::CreateModuleObject($module)){
 			$testVersion = '16.0.14';
 			if(CheckVersion($testVersion, $info->MODULE_VERSION)){
@@ -1628,7 +1641,7 @@ class COptimus{
 		}
 	}
 
-	function GetFileInfo($arItem){
+	static function  GetFileInfo($arItem){
 		$arTmpItem = CFile::GetFileArray($arItem);
 		switch($arTmpItem["CONTENT_TYPE"]){
 			case 'application/pdf': $type="pdf"; break;
@@ -1669,7 +1682,7 @@ class COptimus{
 		return array("TYPE" => $type, "FILE_SIZE" => $filesize, "FILE_SIZE_FORMAT" => $filesize_format, "DESCRIPTION" => ( $arTmpItem["DESCRIPTION"] ? $arTmpItem["DESCRIPTION"] : $fileName), "SRC" => $arTmpItem["SRC"]);
 	}
 
-	function getMinPriceFromOffersExt(&$offers, $currency, $replaceMinPrice = true){
+	static function  getMinPriceFromOffersExt(&$offers, $currency, $replaceMinPrice = true){
 		$replaceMinPrice = ($replaceMinPrice === true);
 		$result = false;
 		$minPrice = 0;
@@ -1719,7 +1732,7 @@ class COptimus{
 		return $result;
 	}
 
-	function getSliderForItemExt(&$item, $propertyCode, $addDetailToSlider, $encode = true)
+	static function  getSliderForItemExt(&$item, $propertyCode, $addDetailToSlider, $encode = true)
     {
         $encode = ($encode === true);
         $result = array();
@@ -1830,7 +1843,7 @@ class COptimus{
         return $result;
     }
 
-	function GetTemplateOptions($siteID){
+	static function  GetTemplateOptions($siteID){
 		// check stores
 		static $bStores;
 		if ($bStores === null){
@@ -2289,7 +2302,10 @@ class COptimus{
 			$arModuleOptions[] = GetMessage("QUANTITY_OPTIONS");
 			$arGroups = array();
 			$DefaultGroupID = 0;
-			$rsGroups = CGroup::GetList($by = "id", $order = "asc", array("ACTIVE" => "Y"));
+            $by = "id"; // Задаем значение переменной $by до вызова метода GetList()
+            $order = "asc"; // Задаем значение переменной $order до вызова метода GetList()
+
+            $rsGroups = CGroup::GetList($by, $order, array("ACTIVE" => "Y"));
 			while($arItem = $rsGroups->Fetch()){
 				$arGroups[$arItem["ID"]] = $arItem["NAME"];
 				if($arItem["ANONYMOUS"] == "Y"){
@@ -2372,7 +2388,7 @@ class COptimus{
 		return array("TABS" => $arTabs, "TEMPLATE_OPTIONS" => $arComponentOptions);
 	}
 
-	function SetJSOptions(){
+	static function  SetJSOptions(){
 		global $APPLICATION, $TEMPLATE_OPTIONS, $THEME_SWITCHER, $STARTTIME;
 		$MESS["MIN_ORDER_PRICE_TEXT"]=COption::GetOptionString(self::moduleID, "MIN_ORDER_PRICE_TEXT", GetMessage("MIN_ORDER_PRICE_TEXT_EXAMPLE"), SITE_ID);
 		?>
@@ -2580,7 +2596,7 @@ class COptimus{
 		}?>
 	<?}
 
-	function checkAllowDelivery($summ, $currency){
+	static function  checkAllowDelivery($summ, $currency){
 		$ERROR = false;
 		$min_price = \Bitrix\Main\Config\Option::get(self::moduleID, "MIN_ORDER_PRICE", 1000, SITE_ID);
 		$error_text = "";
@@ -2596,7 +2612,7 @@ class COptimus{
 		return $arError=array( "ERROR" => $ERROR, "TEXT" => $error_text );
 	}
 
-	function showMoreText( $text ){
+	static function  showMoreText( $text ){
 		$arText = explode( "#MORE_TEXT#", $text);
 		if( $arText[1] ){
 			$str = $arText[0];
@@ -2612,7 +2628,7 @@ class COptimus{
 		return $str;
 	}
 
-	function IsCompositeEnabled(){
+	static function  IsCompositeEnabled(){
 		if(class_exists('CHTMLPagesCache')){
 			if(method_exists('CHTMLPagesCache', 'GetOptions')){
 				if($arHTMLCacheOptions = CHTMLPagesCache::GetOptions()){
@@ -2638,7 +2654,7 @@ class COptimus{
 		return false;
 	}
 
-	function EnableComposite($auto = false){
+	static function  EnableComposite($auto = false){
 		if(class_exists('CHTMLPagesCache')){
 			if(method_exists('CHTMLPagesCache', 'GetOptions')){
 				if($arHTMLCacheOptions = CHTMLPagesCache::GetOptions()){
@@ -2654,7 +2670,7 @@ class COptimus{
 		}
 	}
 
-	function __AdmSettingsSaveOption_EX($module_id, $arOption){
+	static function  __AdmSettingsSaveOption_EX($module_id, $arOption){
 		if(!is_array($arOption)){
 			return false;
 		}
@@ -2785,7 +2801,7 @@ class COptimus{
 		return $arTemplate;
 	}
 
-	function __AdmSettingsDrawRow_EX($module_id, $Option, $siteID){
+	static function  __AdmSettingsDrawRow_EX($module_id, $Option, $siteID){
 		$arControllerOption = CControllerClient::GetInstalledOptions($module_id);
 		if(!is_array($Option)):?><tr class="heading"><td colspan="2"><?=$Option?></td></tr><?
 		elseif(isset($Option["note"])):
@@ -2907,11 +2923,11 @@ class COptimus{
 		endif;
 	}
 
-	function __AdmSettingsDrawCustomRow($html){
+	static function  __AdmSettingsDrawCustomRow($html){
 		echo '<tr><td colspan="2">'.$html.'</td></tr>';
 	}
 
-	protected function __ShowFilePropertyField($name, $arOption, $values){
+	protected static function  __ShowFilePropertyField($name, $arOption, $values){
 		global $bCopy, $historyId;
 
 		if(!is_array($values)){
@@ -3078,7 +3094,7 @@ class COptimus{
 		}
 	}
 
-	function clearBasketCacheHandler($orderID, $arFields, $arParams = array()){
+	static function  clearBasketCacheHandler($orderID, $arFields, $arParams = array()){
 		COptimusCache::ClearCacheByTag('sale_basket');
 		unset($_SESSION['ASPRO_BASKET_COUNTERS']);
 		if(isset($arFields) && $arFields)
@@ -3111,7 +3127,7 @@ class COptimus{
 		}
 	}
 
-	function OnBeforeUserUpdateHandler(&$arFields){
+	static function  OnBeforeUserUpdateHandler(&$arFields){
 		$bTmpUser = false;
 
 		if(strlen($arFields["NAME"]))
@@ -3175,7 +3191,7 @@ class COptimus{
 		return $arFields;
 	}
 
-	function GetYearsItems($iblock_id){
+	static function  GetYearsItems($iblock_id){
 		$arYears=array();
 		$rsItems=CIBlockElement::GetList(array(), array("IBLOCK_ID" => $iblock_id, "ACTIVE" => "Y", "GLOBAL_ACTIVE" => "Y"), false, false, array("ID", "DATE_ACTIVE_FROM"));
 		while($arItem=$rsItems->Fetch()){
@@ -3189,7 +3205,7 @@ class COptimus{
 		return $arYears;
 	}
 
-	function removeDirectory($dir){
+	static function  removeDirectory($dir){
 		if($objs = glob($dir."/*")){
 			foreach($objs as $obj){
 				if(is_dir($obj)){
@@ -3211,7 +3227,7 @@ class COptimus{
 		}
 	}
 
-    function inputClean($input, $sql = false){
+    static function  inputClean($input, $sql = false){
        /* $input = htmlentities($input, ENT_QUOTES, LANG_CHARSET);
         if(get_magic_quotes_gpc ())
         {
@@ -3298,7 +3314,7 @@ class COptimus{
     }
 
 
-	function correctInstall(){
+	static function  correctInstall(){
 		if(COption::GetOptionString(self::moduleID, "WIZARD_DEMO_INSTALLED") == "Y"){
 			if(CModule::IncludeModule("main")){
 				require_once($_SERVER["DOCUMENT_ROOT"].BX_ROOT."/modules/main/classes/general/wizard.php");
@@ -3310,7 +3326,7 @@ class COptimus{
 		}
 	}
 
-	function newAction($action = "unknown"){
+	static function  newAction($action = "unknown"){
 		$socket = fsockopen('bi.aspro.ru', 80, $errno, $errstr, 10);
 		if($socket){
 			if(CModule::IncludeModule("main")){
@@ -3419,7 +3435,7 @@ class COptimus{
 	}
 
 
-	function DoIBlockAfterSave($arg1, $arg2 = false){
+	static function  DoIBlockAfterSave($arg1, $arg2 = false){
 		$ELEMENT_ID = false;
 		$IBLOCK_ID = false;
 		$OFFERS_IBLOCK_ID = false;
@@ -3673,7 +3689,7 @@ class COptimus{
 		}
 	}
 
-	function setStockProduct($ID, $arFields){
+	static function  setStockProduct($ID, $arFields){
 		//Get iblock element
 		$rsPriceElement = CIBlockElement::GetList(
 			array(),
@@ -3803,7 +3819,7 @@ class COptimus{
 		}
 	}
 
-	function getViewedProducts($userID=false, $siteID=false){
+	static function  getViewedProducts($userID=false, $siteID=false){
 		global $TEMPLATE_OPTIONS, $STARTTIME;
 		$arResult = array();
 		$siteID = $siteID ? $siteID : SITE_ID;
@@ -3858,7 +3874,7 @@ class COptimus{
 		return $arResult;
 	}
 
-	function setFooterTitle(){
+	static function  setFooterTitle(){
 		global $APPLICATION, $arSite;
 		if(\Bitrix\Main\Config\Option::get("aspro.optimus", "HIDE_SITE_NAME_TITLE", "N")=="N"){
 			if(!COptimus::IsMainPage()){
@@ -3889,7 +3905,7 @@ class COptimus{
 		self::SetMeta();
 	}
 
-	function getBasketItems($iblockID=0, $field="PRODUCT_ID"){
+	static function  getBasketItems($iblockID=0, $field="PRODUCT_ID"){
 		$basket_items = $delay_items = $subscribe_items = $not_available_items = array();
 		$arItems=array();
 		$bUseSubscribeManager = ($arSubscribeList = self::getUserSubscribeList()) !== false;
@@ -3941,7 +3957,7 @@ class COptimus{
 		return $arItems;
 	}
 
-	function getUserSubscribeList($userId = false){
+	static function  getUserSubscribeList($userId = false){
 		if(CModule::IncludeModule('catalog')){
 			if(class_exists('\Bitrix\Catalog\Product\SubscribeManager')){
 				global $USER, $DB;
@@ -3985,7 +4001,7 @@ class COptimus{
 		return false;
 	}
 
-	function showFooterBasket(){
+	static function  showFooterBasket(){
 		Bitrix\Main\Page\Frame::getInstance()->startDynamicWithID("basketitems-block");
 
 		$arItems=self::getBasketItems();
@@ -4061,7 +4077,7 @@ class COptimus{
 		return $arFilter;
 	}
 
-	function prepareShopListArray($arShops){
+	static function  prepareShopListArray($arShops){
 		$arFormatShops=array();
 
 		$arPlacemarks = array();
@@ -4159,7 +4175,7 @@ class COptimus{
 		return $arFormatShops;
 	}
 
-	function prepareShopDetailArray($arShop, $arParams){
+	static function  prepareShopDetailArray($arShop, $arParams){
 		$mapLAT = $mapLON = 0;
 		$arPlacemarks = array();
 		$arPhotos = array();
@@ -4260,7 +4276,7 @@ class COptimus{
 
 	}
 
-	function drawShopsList($arShops, $arParams, $showMap="Y"){
+	static function  drawShopsList($arShops, $arParams, $showMap="Y"){
 		global $APPLICATION;
 		$mapLAT = $mapLON = 0;
 		$arPlacemarks = array();
@@ -4468,7 +4484,7 @@ class COptimus{
 		}
 	}
 
-	function drawShopDetail($arShop, $arParams, $showMap="Y"){
+	static function  drawShopDetail($arShop, $arParams, $showMap="Y"){
 		global $APPLICATION;
 		$mapLAT = $mapLON = 0;
 		$arPlacemarks = array();

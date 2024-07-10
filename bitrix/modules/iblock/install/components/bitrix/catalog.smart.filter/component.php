@@ -1,5 +1,4 @@
-<?
-use Bitrix\Main\Loader;
+<?php
 if(!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED!==true) die();
 /** @var CBitrixCatalogSmartFilter $this */
 /** @var array $arParams */
@@ -11,6 +10,11 @@ if(!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED!==true) die();
 /** @global CUser $USER */
 /** @global CMain $APPLICATION */
 
+use Bitrix\Main\Loader;
+use Bitrix\Iblock\PropertyTable;
+use Bitrix\Iblock\SectionPropertyTable;
+use Bitrix\Iblock\PropertyIndex\Storage;
+
 if(!Loader::includeModule('iblock'))
 {
 	ShowError(GetMessage("CC_BCF_MODULE_NOT_INSTALLED"));
@@ -18,8 +22,16 @@ if(!Loader::includeModule('iblock'))
 }
 
 $FILTER_NAME = (string)$arParams["FILTER_NAME"];
+$PREFILTER_NAME = (string)$arParams["PREFILTER_NAME"];
 
-if($this->StartResultCache(false, 'v7'.($arParams["CACHE_GROUPS"]? $USER->GetGroups(): false)))
+global ${$PREFILTER_NAME};
+$preFilter = ${$PREFILTER_NAME} ?? [];
+if (!is_array($preFilter))
+{
+	$preFilter = [];
+}
+
+if($this->StartResultCache(false, array('v11', $preFilter, ($arParams["CACHE_GROUPS"]? $USER->GetGroups(): false))))
 {
 	$arResult["FACET_FILTER"] = false;
 	$arResult["COMBO"] = array();
@@ -42,69 +54,102 @@ if($this->StartResultCache(false, 'v7'.($arParams["CACHE_GROUPS"]? $USER->GetGro
 				"CHECK_PERMISSIONS" => "Y",
 			);
 			if ($this->arParams['HIDE_NOT_AVAILABLE'] == 'Y')
-				$arResult["FACET_FILTER"]['CATALOG_AVAILABLE'] = 'Y';
+				$arResult["FACET_FILTER"]['AVAILABLE'] = 'Y';
+			if (!empty($preFilter))
+				$arResult["FACET_FILTER"] = array_merge($preFilter, $arResult["FACET_FILTER"]);
+
+			$cntProperty = 0;
+			$tmpProperty = array();
+			$dictionaryID = array();
+			$elementDictionary = array();
+			$sectionDictionary = array();
+			$directoryPredict = array();
 
 			$res = $this->facet->query($arResult["FACET_FILTER"]);
 			CTimeZone::Disable();
-			while ($row = $res->fetch())
+			while ($rowData = $res->fetch())
 			{
-				$facetId = $row["FACET_ID"];
-				if (\Bitrix\Iblock\PropertyIndex\Storage::isPropertyId($facetId))
+				$facetId = $rowData["FACET_ID"];
+				if (Storage::isPropertyId($facetId))
 				{
-					$PID = \Bitrix\Iblock\PropertyIndex\Storage::facetIdToPropertyId($facetId);
-					if ($arResult["ITEMS"][$PID]["PROPERTY_TYPE"] == "N")
+					$PID = Storage::facetIdToPropertyId($facetId);
+					if (!isset($arResult["ITEMS"][$PID]))
 					{
-						$this->fillItemValues($arResult["ITEMS"][$PID], $row["MIN_VALUE_NUM"]);
-						$this->fillItemValues($arResult["ITEMS"][$PID], $row["MAX_VALUE_NUM"]);
-						if ($row["VALUE_FRAC_LEN"] > 0)
-							$arResult["ITEMS"][$PID]["DECIMALS"] = $row["VALUE_FRAC_LEN"];
+						continue;
 					}
-					elseif ($arResult["ITEMS"][$PID]["DISPLAY_TYPE"] == "U")
+					++$cntProperty;
+
+					$rowData['PID'] = $PID;
+					$tmpProperty[] = $rowData;
+					$item = $arResult["ITEMS"][$PID];
+					$arUserType = CIBlockProperty::GetUserType($item['USER_TYPE']);
+
+					if ($item["PROPERTY_TYPE"] === PropertyTable::TYPE_STRING)
 					{
-						$this->fillItemValues($arResult["ITEMS"][$PID], FormatDate("Y-m-d", $row["MIN_VALUE_NUM"]));
-						$this->fillItemValues($arResult["ITEMS"][$PID], FormatDate("Y-m-d", $row["MAX_VALUE_NUM"]));
+						$dictionaryID[] = $rowData["VALUE"];
 					}
-					elseif ($arResult["ITEMS"][$PID]["PROPERTY_TYPE"] == "S")
+
+					if ($item["PROPERTY_TYPE"] == PropertyTable::TYPE_ELEMENT && $item['USER_TYPE'] == '')
 					{
-						$addedKey = $this->fillItemValues($arResult["ITEMS"][$PID], $this->facet->lookupDictionaryValue($row["VALUE"]), true);
-						if (strlen($addedKey) > 0)
-						{
-							$arResult["ITEMS"][$PID]["VALUES"][$addedKey]["FACET_VALUE"] = $row["VALUE"];
-							$arResult["ITEMS"][$PID]["VALUES"][$addedKey]["ELEMENT_COUNT"] = $row["ELEMENT_COUNT"];
-						}
+						$elementDictionary[] = $rowData['VALUE'];
 					}
-					else
+
+					if ($item["PROPERTY_TYPE"] == PropertyTable::TYPE_SECTION && $item['USER_TYPE'] == '')
 					{
-						$addedKey = $this->fillItemValues($arResult["ITEMS"][$PID], $row["VALUE"], true);
-						if (strlen($addedKey) > 0)
-						{
-							$arResult["ITEMS"][$PID]["VALUES"][$addedKey]["FACET_VALUE"] = $row["VALUE"];
-							$arResult["ITEMS"][$PID]["VALUES"][$addedKey]["ELEMENT_COUNT"] = $row["ELEMENT_COUNT"];
-						}
+						$sectionDictionary[] = $rowData['VALUE'];
+					}
+
+					if ($item['USER_TYPE'] == 'directory' && isset($arUserType['GetExtendedValue']))
+					{
+						$tableName = $item['USER_TYPE_SETTINGS']['TABLE_NAME'];
+						$directoryPredict[$tableName]['PROPERTY'] = array(
+							'PID' => $item['ID'],
+							'USER_TYPE_SETTINGS' => $item['USER_TYPE_SETTINGS'],
+							'GetExtendedValue' => $arUserType['GetExtendedValue'],
+						);
+						$directoryPredict[$tableName]['VALUE'][] = $rowData["VALUE"];
 					}
 				}
 				else
 				{
-					$priceId = \Bitrix\Iblock\PropertyIndex\Storage::facetIdToPriceId($facetId);
+					$priceId = Storage::facetIdToPriceId($facetId);
 					foreach($arResult["PRICES"] as $NAME => $arPrice)
 					{
 						if ($arPrice["ID"] == $priceId && isset($arResult["ITEMS"][$NAME]))
 						{
-							$this->fillItemPrices($arResult["ITEMS"][$NAME], $row);
+							$this->fillItemPrices($arResult["ITEMS"][$NAME], $rowData);
 
 							if (isset($arResult["ITEMS"][$NAME]["~CURRENCIES"]))
 							{
 								$arResult["CURRENCIES"] += $arResult["ITEMS"][$NAME]["~CURRENCIES"];
 							}
 
-							if ($row["VALUE_FRAC_LEN"] > 0)
+							if ($rowData["VALUE_FRAC_LEN"] > 0)
 							{
-								$arResult["ITEMS"][$PID]["DECIMALS"] = $row["VALUE_FRAC_LEN"];
+								$arResult["ITEMS"][$PID]["DECIMALS"] = $rowData["VALUE_FRAC_LEN"];
 							}
 						}
 					}
 				}
+
+				if ($cntProperty > 200)
+				{
+					$this->predictIBElementFetch($elementDictionary);
+					$this->predictIBSectionFetch($sectionDictionary);
+					$this->processProperties($arResult, $tmpProperty, $dictionaryID, $directoryPredict);
+					$cntProperty = 0;
+					$tmpProperty = array();
+					$dictionaryID = array();
+					$lookupDictionary = array();
+					$directoryPredict = array();
+					$elementDictionary = array();
+					$sectionDictionary = array();
+				}
 			}
+
+			$this->predictIBElementFetch($elementDictionary);
+			$this->predictIBSectionFetch($sectionDictionary);
+			$this->processProperties($arResult, $tmpProperty, $dictionaryID, $directoryPredict);
 			CTimeZone::Enable();
 		}
 		else
@@ -118,7 +163,9 @@ if($this->StartResultCache(false, 'v7'.($arParams["CACHE_GROUPS"]? $USER->GetGro
 				"CHECK_PERMISSIONS" => "Y",
 			);
 			if ('Y' == $this->arParams['HIDE_NOT_AVAILABLE'])
-				$arElementFilter['CATALOG_AVAILABLE'] = 'Y';
+				$arElementFilter['AVAILABLE'] = 'Y';
+			if (!empty($preFilter))
+				$arElementFilter = array_merge($preFilter, $arElementFilter);
 
 			$arElements = array();
 
@@ -128,7 +175,8 @@ if($this->StartResultCache(false, 'v7'.($arParams["CACHE_GROUPS"]? $USER->GetGro
 				while($arElement = $rsElements->Fetch())
 					$arElements[$arElement["IBLOCK_ELEMENT_ID"]] = $arElement;
 			}
-			else
+
+			if (empty($arElements))
 			{
 				$rsElements = CIBlockElement::GetList(array('ID' => 'ASC'), $arElementFilter, false, false, array('ID', 'IBLOCK_ID'));
 				while($arElement = $rsElements->Fetch())
@@ -145,7 +193,7 @@ if($this->StartResultCache(false, 'v7'.($arParams["CACHE_GROUPS"]? $USER->GetGro
 					"=PROPERTY_".$this->SKU_PROPERTY_ID => array_keys($arElements),
 				);
 				if ($this->arParams['HIDE_NOT_AVAILABLE'] == 'Y')
-					$arSkuFilter['CATALOG_AVAILABLE'] = 'Y';
+					$arSkuFilter['AVAILABLE'] = 'Y';
 
 				$rsElements = CIBlockElement::GetPropertyValues($this->SKU_IBLOCK_ID, $arSkuFilter, false, array('ID' => $this->arResult["SKU_PROPERTY_ID_LIST"]));
 				while($arSku = $rsElements->Fetch())
@@ -176,20 +224,30 @@ if($this->StartResultCache(false, 'v7'.($arParams["CACHE_GROUPS"]? $USER->GetGro
 				$uniqStr = '';
 				foreach($arResult["ITEMS"] as $PID => $arItem)
 				{
+					if (!isset($arElement[$PID]))
+					{
+						continue;
+					}
 					if (is_array($arElement[$PID]))
 					{
 						foreach($arElement[$PID] as $value)
 						{
 							$key = $this->fillItemValues($arResult["ITEMS"][$PID], $value);
-							$propertyValues[$PID][$key] = $arResult["ITEMS"][$PID]["VALUES"][$key]["VALUE"];
-							$uniqStr .= '|'.$key.'|'.$propertyValues[$PID][$key];
+							if ($key !== null)
+							{
+								$propertyValues[$PID][$key] = $arResult["ITEMS"][$PID]["VALUES"][$key]["VALUE"];
+								$uniqStr .= '|' . $key . '|' . $propertyValues[$PID][$key];
+							}
 						}
 					}
 					elseif ($arElement[$PID] !== false)
 					{
 						$key = $this->fillItemValues($arResult["ITEMS"][$PID], $arElement[$PID]);
-						$propertyValues[$PID][$key] = $arResult["ITEMS"][$PID]["VALUES"][$key]["VALUE"];
-						$uniqStr .= '|'.$key.'|'.$propertyValues[$PID][$key];
+						if ($key !== null)
+						{
+							$propertyValues[$PID][$key] = $arResult["ITEMS"][$PID]["VALUES"][$key]["VALUE"];
+							$uniqStr .= '|' . $key . '|' . $propertyValues[$PID][$key];
+						}
 					}
 				}
 
@@ -207,8 +265,10 @@ if($this->StartResultCache(false, 'v7'.($arParams["CACHE_GROUPS"]? $USER->GetGro
 			{
 				if (!$value['CAN_VIEW'] && !$value['CAN_BUY'])
 					continue;
-				$arSelect[] = $value["SELECT"];
-				$arFilter["CATALOG_SHOP_QUANTITY_".$value["ID"]] = 1;
+				$arSelect = array_merge($arSelect, $value["SELECT_EXTENDED"]);
+				$arElementFilter["DEFAULT_PRICE_FILTER_".$value["ID"]] = 1;
+				if (isset($arSkuFilter))
+					$arSkuFilter["DEFAULT_PRICE_FILTER_".$value["ID"]] = 1;
 			}
 			unset($value);
 
@@ -267,6 +327,7 @@ if($this->StartResultCache(false, 'v7'.($arParams["CACHE_GROUPS"]? $USER->GetGro
 		}
 	}
 	$this->setCurrencyTag();
+	$this->setIblockTag();
 
 	$this->EndResultCache();
 }
@@ -306,16 +367,17 @@ foreach($arResult["ITEMS"] as $PID => $arItem)
 		if(
 			isset($_CHECK[$ar["CONTROL_NAME"]])
 			|| (
-				isset($_CHECK[$ar["CONTROL_NAME_ALT"]])
+				isset($ar["CONTROL_NAME_ALT"])
+				&& isset($_CHECK[$ar["CONTROL_NAME_ALT"]])
 				&& $_CHECK[$ar["CONTROL_NAME_ALT"]] == $ar["HTML_VALUE_ALT"]
 			)
 		)
 		{
-			if($arItem["PROPERTY_TYPE"] == "N")
+			if ($arItem["PROPERTY_TYPE"] === PropertyTable::TYPE_NUMBER)
 			{
 				$arResult["ITEMS"][$PID]["VALUES"][$key]["HTML_VALUE"] = htmlspecialcharsbx($_CHECK[$ar["CONTROL_NAME"]]);
 				$arResult["ITEMS"][$PID]["DISPLAY_EXPANDED"] = "Y";
-				if ($arResult["FACET_FILTER"] && strlen($_CHECK[$ar["CONTROL_NAME"]]) > 0)
+				if ($arResult["FACET_FILTER"] && $_CHECK[$ar["CONTROL_NAME"]] <> '')
 				{
 					if ($key == "MIN")
 						$this->facet->addNumericPropertyFilter($PID, ">=", $_CHECK[$ar["CONTROL_NAME"]]);
@@ -327,7 +389,7 @@ foreach($arResult["ITEMS"] as $PID => $arItem)
 			{
 				$arResult["ITEMS"][$PID]["VALUES"][$key]["HTML_VALUE"] = htmlspecialcharsbx($_CHECK[$ar["CONTROL_NAME"]]);
 				$arResult["ITEMS"][$PID]["DISPLAY_EXPANDED"] = "Y";
-				if ($arResult["FACET_FILTER"] && strlen($_CHECK[$ar["CONTROL_NAME"]]) > 0)
+				if ($arResult["FACET_FILTER"] && $_CHECK[$ar["CONTROL_NAME"]] <> '')
 				{
 					if ($key == "MIN")
 						$this->facet->addPriceFilter($arResult["PRICES"][$PID]["ID"], ">=", $_CHECK[$ar["CONTROL_NAME"]]);
@@ -335,11 +397,11 @@ foreach($arResult["ITEMS"] as $PID => $arItem)
 						$this->facet->addPriceFilter($arResult["PRICES"][$PID]["ID"], "<=", $_CHECK[$ar["CONTROL_NAME"]]);
 				}
 			}
-			elseif($arItem["DISPLAY_TYPE"] == "U")
+			elseif ($arItem["DISPLAY_TYPE"] === SectionPropertyTable::CALENDAR)
 			{
 				$arResult["ITEMS"][$PID]["VALUES"][$key]["HTML_VALUE"] = htmlspecialcharsbx($_CHECK[$ar["CONTROL_NAME"]]);
 				$arResult["ITEMS"][$PID]["DISPLAY_EXPANDED"] = "Y";
-				if ($arResult["FACET_FILTER"] && strlen($_CHECK[$ar["CONTROL_NAME"]]) > 0)
+				if ($arResult["FACET_FILTER"] && $_CHECK[$ar["CONTROL_NAME"]] <> '')
 				{
 					if ($key == "MIN")
 						$this->facet->addDatetimePropertyFilter($PID, ">=", MakeTimeStamp($_CHECK[$ar["CONTROL_NAME"]], FORMAT_DATE));
@@ -371,6 +433,10 @@ foreach($arResult["ITEMS"] as $PID => $arItem)
 				}
 			}
 		}
+		if (!isset($arResult["ITEMS"][$PID]["VALUES"][$key]["HTML_VALUE"]))
+		{
+			$arResult["ITEMS"][$PID]["VALUES"][$key]["HTML_VALUE"] = '';
+		}
 	}
 }
 
@@ -385,7 +451,7 @@ if ($_CHECK)
 		{
 			foreach ($arResult["ITEMS"] as $PID => &$arItem)
 			{
-				if ($arItem["PROPERTY_TYPE"] != "N" && !isset($arItem["PRICE"]))
+				if ($arItem["PROPERTY_TYPE"] !== PropertyTable::TYPE_NUMBER && !isset($arItem["PRICE"]))
 				{
 					foreach ($arItem["VALUES"] as $key => &$arValue)
 					{
@@ -404,10 +470,10 @@ if ($_CHECK)
 			while ($row = $res->fetch())
 			{
 				$facetId = $row["FACET_ID"];
-				if (\Bitrix\Iblock\PropertyIndex\Storage::isPropertyId($facetId))
+				if (Storage::isPropertyId($facetId))
 				{
-					$pp = \Bitrix\Iblock\PropertyIndex\Storage::facetIdToPropertyId($facetId);
-					if ($arResult["ITEMS"][$pp]["PROPERTY_TYPE"] == "N")
+					$pp = Storage::facetIdToPropertyId($facetId);
+					if ($arResult["ITEMS"][$pp]["PROPERTY_TYPE"] === PropertyTable::TYPE_NUMBER)
 					{
 						if (is_array($arResult["ITEMS"][$pp]["VALUES"]))
 						{
@@ -422,11 +488,24 @@ if ($_CHECK)
 							unset($facetIndex[$pp][$row["VALUE"]]["DISABLED"]);
 							$facetIndex[$pp][$row["VALUE"]]["ELEMENT_COUNT"] = $row["ELEMENT_COUNT"];
 						}
+						elseif (isset($arResult["ITEMS"][$pp]["VALUES"]))
+						{
+							if (isset($arResult["ITEMS"][$pp]["VALUES"]["MIN"]))
+							{
+								unset($arResult["ITEMS"][$pp]["VALUES"]["MIN"]["DISABLED"]);
+								$arResult["ITEMS"][$pp]["VALUES"]["MIN"]["ELEMENT_COUNT"] = $row["ELEMENT_COUNT"];
+							}
+							if (isset($arResult["ITEMS"][$pp]["VALUES"]["MAX"]))
+							{
+								unset($arResult["ITEMS"][$pp]["VALUES"]["MAX"]["DISABLED"]);
+								$arResult["ITEMS"][$pp]["VALUES"]["MAX"]["ELEMENT_COUNT"] = $row["ELEMENT_COUNT"];
+							}
+						}
 					}
 				}
 				else
 				{
-					$priceId = \Bitrix\Iblock\PropertyIndex\Storage::facetIdToPriceId($facetId);
+					$priceId = Storage::facetIdToPriceId($facetId);
 					foreach($arResult["PRICES"] as $NAME => $arPrice)
 					{
 						if (
@@ -436,7 +515,7 @@ if ($_CHECK)
 						)
 						{
 							$currency = $row["VALUE"];
-							$existCurrency = strlen($currency) > 0;
+							$existCurrency = $currency <> '';
 							if ($existCurrency)
 								$currency = $this->facet->lookupDictionaryValue($currency);
 
@@ -477,7 +556,7 @@ if ($_CHECK)
 		/*Handle disabled for checkboxes (TODO: handle number type)*/
 		foreach ($arResult["ITEMS"] as $PID => &$arItem)
 		{
-			if ($arItem["PROPERTY_TYPE"] != "N" && !isset($arItem["PRICE"]))
+			if ($arItem["PROPERTY_TYPE"] !== PropertyTable::TYPE_NUMBER && !isset($arItem["PRICE"]))
 			{
 				//All except current one
 				$checked = $allCHECKED;
@@ -518,6 +597,63 @@ if ($_CHECK)
 		unset($arItem);
 	}
 }
+foreach (array_keys($arResult["ITEMS"]) as $id)
+{
+	if (isset($arResult['ITEMS'][$id]['VALUES']['MIN']))
+	{
+		if (!isset($arResult['ITEMS'][$id]['VALUES']['MIN']['VALUE']))
+		{
+			if (
+				isset($arResult['ITEMS'][$id]['PRICE'])
+				|| $arResult['ITEMS'][$id]['DISPLAY_TYPE'] === SectionPropertyTable::NUMBERS_WITH_SLIDER
+			)
+			{
+				$arResult['ITEMS'][$id]['VALUES']['MIN']['VALUE'] = 0;
+			}
+			else
+			{
+				$arResult['ITEMS'][$id]['VALUES']['MIN']['VALUE'] = '';
+			}
+		}
+		if (!isset($arResult['ITEMS'][$id]['VALUES']['MIN']['FILTERED_VALUE']))
+		{
+			$arResult['ITEMS'][$id]['VALUES']['MIN']['FILTERED_VALUE'] = '';
+		}
+	}
+	if (isset($arResult['ITEMS'][$id]['VALUES']['MAX']))
+	{
+		if (!isset($arResult['ITEMS'][$id]['VALUES']['MAX']['VALUE']))
+		{
+			if (
+				isset($arResult['ITEMS'][$id]['PRICE'])
+				|| $arResult['ITEMS'][$id]['DISPLAY_TYPE'] === SectionPropertyTable::NUMBERS_WITH_SLIDER
+			)
+			{
+				$arResult['ITEMS'][$id]['VALUES']['MAX']['VALUE'] = 0;
+			}
+			else
+			{
+				$arResult['ITEMS'][$id]['VALUES']['MAX']['VALUE'] = '';
+			}
+		}
+		if (!isset($arResult['ITEMS'][$id]['VALUES']['MAX']['FILTERED_VALUE']))
+		{
+			$arResult['ITEMS'][$id]['VALUES']['MAX']['FILTERED_VALUE'] = '';
+		}
+	}
+	if (!isset($arResult['ITEMS'][$id]['DECIMALS']))
+	{
+		$arResult['ITEMS'][$id]['DECIMALS'] = 0;
+	}
+	if (!empty($arResult['ITEMS'][$id]['VALUES']) && is_array($arResult['ITEMS'][$id]['VALUES']))
+	{
+		foreach (array_keys($arResult['ITEMS'][$id]['VALUES']) as $valueIndex)
+		{
+			$arResult['ITEMS'][$id]['VALUES'][$valueIndex]['CHECKED'] ??= false;
+			$arResult['ITEMS'][$id]['VALUES'][$valueIndex]['DISABLED'] ??= false;
+		}
+	}
+}
 
 /*Make iblock filter*/
 global ${$FILTER_NAME};
@@ -528,17 +664,35 @@ foreach($arResult["ITEMS"] as $PID => $arItem)
 {
 	if(isset($arItem["PRICE"]))
 	{
-		if(strlen($arItem["VALUES"]["MIN"]["HTML_VALUE"]) && strlen($arItem["VALUES"]["MAX"]["HTML_VALUE"]))
-			${$FILTER_NAME}["><CATALOG_PRICE_".$arItem["ID"]] = array($arItem["VALUES"]["MIN"]["HTML_VALUE"], $arItem["VALUES"]["MAX"]["HTML_VALUE"]);
-		elseif(strlen($arItem["VALUES"]["MIN"]["HTML_VALUE"]))
+		$setValue = false;
+		if($arItem["VALUES"]["MIN"]["HTML_VALUE"] <> '' && $arItem["VALUES"]["MAX"]["HTML_VALUE"] <> '')
+		{
+			${$FILTER_NAME}["><CATALOG_PRICE_".$arItem["ID"]] = array(
+				$arItem["VALUES"]["MIN"]["HTML_VALUE"],
+				$arItem["VALUES"]["MAX"]["HTML_VALUE"]
+			);
+			$setValue = true;
+		}
+		elseif($arItem["VALUES"]["MIN"]["HTML_VALUE"] <> '')
+		{
 			${$FILTER_NAME}[">=CATALOG_PRICE_".$arItem["ID"]] = $arItem["VALUES"]["MIN"]["HTML_VALUE"];
-		elseif(strlen($arItem["VALUES"]["MAX"]["HTML_VALUE"]))
+			$setValue = true;
+		}
+		elseif($arItem["VALUES"]["MAX"]["HTML_VALUE"] <> '')
+		{
 			${$FILTER_NAME}["<=CATALOG_PRICE_".$arItem["ID"]] = $arItem["VALUES"]["MAX"]["HTML_VALUE"];
+			$setValue = true;
+		}
+		if ($setValue && $this->convertCurrencyId != '')
+		{
+			${$FILTER_NAME}["CATALOG_CURRENCY_SCALE_".$arItem["ID"]] = $this->convertCurrencyId;
+		}
+		unset($setValue);
 	}
-	elseif($arItem["PROPERTY_TYPE"] == "N")
+	elseif($arItem["PROPERTY_TYPE"] === PropertyTable::TYPE_NUMBER)
 	{
-		$existMinValue = (strlen($arItem["VALUES"]["MIN"]["HTML_VALUE"]) > 0);
-		$existMaxValue = (strlen($arItem["VALUES"]["MAX"]["HTML_VALUE"]) > 0);
+		$existMinValue = ($arItem["VALUES"]["MIN"]["HTML_VALUE"] <> '');
+		$existMaxValue = ($arItem["VALUES"]["MAX"]["HTML_VALUE"] <> '');
 		if ($existMinValue || $existMaxValue)
 		{
 			$filterKey = '';
@@ -573,10 +727,10 @@ foreach($arResult["ITEMS"] as $PID => $arItem)
 			}
 		}
 	}
-	elseif($arItem["DISPLAY_TYPE"] == "U")
+	elseif($arItem["DISPLAY_TYPE"] === SectionPropertyTable::CALENDAR)
 	{
-		$existMinValue = (strlen($arItem["VALUES"]["MIN"]["HTML_VALUE"]) > 0);
-		$existMaxValue = (strlen($arItem["VALUES"]["MAX"]["HTML_VALUE"]) > 0);
+		$existMinValue = ($arItem["VALUES"]["MIN"]["HTML_VALUE"] <> '');
+		$existMaxValue = ($arItem["VALUES"]["MAX"]["HTML_VALUE"] <> '');
 		if ($existMinValue || $existMaxValue)
 		{
 			$filterKey = '';
@@ -696,6 +850,11 @@ if ($arResult["FACET_FILTER"] && $this->arResult["CURRENCIES"])
 	);
 }
 
+if (!empty($preFilter))
+{
+	${$FILTER_NAME} = array_merge($preFilter, ${$FILTER_NAME});
+}
+
 /*Save to session if needed*/
 if($arParams["SAVE_IN_SESSION"])
 {
@@ -738,17 +897,20 @@ foreach($arResult["ITEMS"] as $PID => $arItem)
 	foreach($arItem["VALUES"] as $key => $ar)
 	{
 		$paramsToDelete[] = $ar["CONTROL_NAME"];
-		$paramsToDelete[] = $ar["CONTROL_NAME_ALT"];
+		if (isset($ar["CONTROL_NAME_ALT"]))
+		{
+			$paramsToDelete[] = $ar["CONTROL_NAME_ALT"];
+		}
 	}
 }
 
 $clearURL = CHTTP::urlDeleteParams($pageURL, $paramsToDelete, array("delete_system_params" => true));
 
-if ($arResult["JS_FILTER_PARAMS"]["SEF_SET_FILTER_URL"])
+if (($arResult["JS_FILTER_PARAMS"]["SEF_SET_FILTER_URL"] ?? ''))
 {
 	$arResult["FILTER_URL"] = $arResult["JS_FILTER_PARAMS"]["SEF_SET_FILTER_URL"];
 	$arResult["FILTER_AJAX_URL"] = htmlspecialcharsbx(CHTTP::urlAddParams($arResult["FILTER_URL"], array(
-		"bxajaxid" => $_GET["bxajaxid"],
+		"bxajaxid" => ($_GET["bxajaxid"] ?? ''),
 	), array(
 		"skip_empty" => true,
 		"encode" => true,
@@ -767,12 +929,12 @@ else
 		{
 			if(isset($_CHECK[$ar["CONTROL_NAME"]]))
 			{
-				if($arItem["PROPERTY_TYPE"] == "N" || isset($arItem["PRICE"]))
+				if($arItem["PROPERTY_TYPE"] === PropertyTable::TYPE_NUMBER || isset($arItem["PRICE"]))
 					$paramsToAdd[$ar["CONTROL_NAME"]] = $_CHECK[$ar["CONTROL_NAME"]];
 				elseif($_CHECK[$ar["CONTROL_NAME"]] == $ar["HTML_VALUE"])
 					$paramsToAdd[$ar["CONTROL_NAME"]] = $_CHECK[$ar["CONTROL_NAME"]];
 			}
-			elseif(isset($_CHECK[$ar["CONTROL_NAME_ALT"]]))
+			elseif(isset($ar["CONTROL_NAME_ALT"]) && isset($_CHECK[$ar["CONTROL_NAME_ALT"]]))
 			{
 				if ($_CHECK[$ar["CONTROL_NAME_ALT"]] == $ar["HTML_VALUE_ALT"])
 					$paramsToAdd[$ar["CONTROL_NAME_ALT"]] = $_CHECK[$ar["CONTROL_NAME_ALT"]];
@@ -786,7 +948,7 @@ else
 	)));
 
 	$arResult["FILTER_AJAX_URL"] = htmlspecialcharsbx(CHTTP::urlAddParams($clearURL, $paramsToAdd + array(
-		"bxajaxid" => $_GET["bxajaxid"],
+		"bxajaxid" => ($_GET["bxajaxid"] ?? ''),
 	), array(
 		"skip_empty" => true,
 		"encode" => true,
@@ -796,6 +958,12 @@ else
 if(isset($_REQUEST["ajax"]) && $_REQUEST["ajax"] === "y")
 {
 	$arFilter = $this->makeFilter($FILTER_NAME);
+	if (!empty($preFilter))
+		$arFilter = array_merge($preFilter, $arFilter);
+	if (Loader::includeModule('catalog'))
+	{
+		$arFilter = CProductQueryBuilder::convertOldFilter($arFilter);
+	}
 	$arResult["ELEMENT_COUNT"] = CIBlockElement::GetList(array(), $arFilter, array(), false);
 
 	if (isset($_GET["bxajaxid"]))
@@ -830,7 +998,10 @@ foreach($arResult["ITEMS"] as $PID => $arItem)
 	foreach($arItem["VALUES"] as $key => $ar)
 	{
 		$arInputNames[$ar["CONTROL_NAME"]] = true;
-		$arInputNames[$ar["CONTROL_NAME_ALT"]] = true;
+		if (isset($ar["CONTROL_NAME_ALT"]))
+		{
+			$arInputNames[$ar["CONTROL_NAME_ALT"]] = true;
+		}
 	}
 }
 $arInputNames["set_filter"]=true;
@@ -884,19 +1055,20 @@ if (
 	$APPLICATION->AddHeadString('<meta property="ya:interaction:url" content="'.CHTTP::urn2uri($exportUrl).'" />');
 }
 
-if ($arParams["XML_EXPORT"] === "Y" && $_REQUEST["mode"] === "xml")
+if ($arParams["XML_EXPORT"] === "Y" && ($_REQUEST["mode"] ?? '') === "xml")
 {
 	$this->setFrameMode(false);
 	ob_start();
 	$this->IncludeComponentTemplate("xml");
 	$xml = ob_get_contents();
 	$APPLICATION->RestartBuffer();
-	while(ob_end_clean());
+	$bufferCount = ob_get_level();
+	while ($bufferCount > 0 && (ob_get_clean() !== false))
+	{
+		$bufferCount--;
+	}
 	header("Content-Type: text/xml; charset=utf-8");
-	$error = "";
-	echo \Bitrix\Main\Text\Encoding::convertEncoding($xml, LANG_CHARSET, "utf-8", $error);
-	CMain::FinalActions();
-	die();
+	CMain::FinalActions(\Bitrix\Main\Text\Encoding::convertEncoding($xml, LANG_CHARSET, "utf-8"));
 }
 elseif(isset($_REQUEST["ajax"]) && $_REQUEST["ajax"] === "y")
 {
@@ -905,11 +1077,14 @@ elseif(isset($_REQUEST["ajax"]) && $_REQUEST["ajax"] === "y")
 	$this->IncludeComponentTemplate("ajax");
 	$json = ob_get_contents();
 	$APPLICATION->RestartBuffer();
-	while(ob_end_clean());
+
+	$bufferCount = ob_get_level();
+	while ($bufferCount > 0 && (ob_get_clean() !== false))
+	{
+		$bufferCount--;
+	}
 	header('Content-Type: application/x-javascript; charset='.LANG_CHARSET);
-	echo $json;
-	CMain::FinalActions();
-	die();
+	CMain::FinalActions($json);
 }
 else
 {

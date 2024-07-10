@@ -30,10 +30,8 @@ $arServices = Array(
 			"catalog2.php",//offers iblock import
 			"catalog3.php",
 			"catalog4.php",
+			"eshopapp.php"
 		),
-	),
-	"eshopapp" => Array(
-		"NAME" => GetMessage("SERVICE_ESHOPAPP"),
 	),
 	"sale" => Array(
 		"NAME" => GetMessage("SERVICE_SALE_DEMO_DATA"),
@@ -43,9 +41,6 @@ $arServices = Array(
 			"step2.php",
 			"step3.php"
 		),
-	),
-	"forum" => Array(
-		"NAME" => GetMessage("SERVICE_FORUM")
 	),
 	"advertising" => Array(
 		"NAME" => GetMessage("SERVICE_ADVERTISING"),

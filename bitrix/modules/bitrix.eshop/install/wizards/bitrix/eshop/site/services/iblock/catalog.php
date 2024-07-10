@@ -1,5 +1,12 @@
-<?if(!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED!==true)
+<?php
+
+if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED !== true)
+{
 	die();
+}
+
+use Bitrix\Main;
+use Bitrix\Main\Localization\LanguageTable;
 
 if(!CModule::IncludeModule("iblock") || !CModule::IncludeModule("catalog"))
 	return;
@@ -10,12 +17,29 @@ if(COption::GetOptionString("eshop", "wizard_installed", "N", WIZARD_SITE_ID) ==
 //catalog iblock import
 $shopLocalization = $wizard->GetVar("shopLocalization");
 
+$datetimeEntity = new Main\DB\SqlExpression(Main\Application::getConnection()->getSqlHelper()->getCurrentDateTimeFunction());
+$languages = [];
+$languageIterator = LanguageTable::getList(array(
+	'select' => array('ID'),
+	'filter' => array('=ACTIVE' => 'Y')
+));
+while ($existLanguage = $languageIterator->fetch())
+	$languages[$existLanguage['ID']] = mb_strtoupper($existLanguage['ID']);
+unset($existLanguage, $languageIterator);
+$whiteList = [
+	'FULL_NAME' => true,
+	'FORMAT_STRING' => true,
+	'DEC_POINT' => true,
+	'THOUSANDS_VARIANT' => true,
+	'DECIMALS' => true
+];
+
 $iblockXMLFile = WIZARD_SERVICE_RELATIVE_PATH."/xml/".LANGUAGE_ID."/catalog.xml";
 switch ($shopLocalization)
 {
 	case 'ua':
 		$iblockXMLFilePrices = WIZARD_SERVICE_RELATIVE_PATH."/xml/".LANGUAGE_ID."/catalog_prices_ua.xml";
-		if (!CCurrency::GetByID('UAH'))
+		if (!\Bitrix\Currency\CurrencyManager::isCurrencyExist('UAH'))
 		{
 			$arFields = array(
 				"CURRENCY" => "UAH",
@@ -25,29 +49,35 @@ switch ($shopLocalization)
 			);
 			CCurrency::Add($arFields);
 
-			$dbLangs = CLanguage::GetList($b, $o, array("ACTIVE" => "Y"));
-			while ($arLangs = $dbLangs->Fetch())
+			$data = \Bitrix\Currency\CurrencyClassifier::getCurrency('UAH', array_keys($languages));
+			if (!empty($data))
 			{
-				IncludeModuleLangFile($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/currency/install_lang.php", $arLangs["LID"]);
-				$arFields = array(
-					"LID" => $arLangs["LID"],
-					"CURRENCY" => "UAH",
-					"FORMAT_STRING" => GetMessage("CUR_INSTALL_UAH_FORMAT_STRING") ? GetMessage("CUR_INSTALL_UAH_FORMAT_STRING") : "",
-					"FULL_NAME" => GetMessage("CUR_INSTALL_UAH_FULL_NAME"),
-					"DEC_POINT" => GetMessage("CUR_INSTALL_UAH_DEC_POINT"),
-					"THOUSANDS_VARIANT" => GetMessage("CUR_INSTALL_UAH_THOUSANDS_SEP"),
-					"THOUSANDS_SEP" => false,
-					"DECIMALS" => 2,
-					"HIDE_ZERO" => "Y"
-				);
-				if (!empty($arFields))
-					CCurrencyLang::Add($arFields);
+				foreach ($languages as $languageId => $upperLanguageId)
+				{
+					if (empty($data[$upperLanguageId]))
+						continue;
+					$fields = [
+						'LID' => $languageId,
+						'CURRENCY' => 'UAH',
+						'CREATED_BY' => null,
+						'MODIFIED_BY' => null,
+						'DATE_CREATE' => $datetimeEntity,
+						'TIMESTAMP_X' => $datetimeEntity,
+						'HIDE_ZERO' => 'Y',
+						'THOUSANDS_SEP' => null
+					] + array_intersect_key($data[$upperLanguageId], $whiteList);
+					$fields['FORMAT_STRING'] = str_replace('#VALUE#', '#', $fields['FORMAT_STRING']);
+					$resultCurrencyLang = \Bitrix\Currency\CurrencyLangTable::add($fields);
+					unset($resultCurrencyLang);
+				}
+				unset($languageId, $upperLanguageId);
 			}
+			unset($data);
 		}
 		break;
 	case 'bl':
 		$iblockXMLFilePrices = WIZARD_SERVICE_RELATIVE_PATH."/xml/".LANGUAGE_ID."/catalog_prices_bl.xml";
-		if (!CCurrency::GetByID('BYR'))
+		if (!\Bitrix\Currency\CurrencyManager::isCurrencyExist('BYR'))
 		{
 			$arFields = array(
 				"CURRENCY" => "BYR",
@@ -57,24 +87,30 @@ switch ($shopLocalization)
 			);
 			CCurrency::Add($arFields);
 
-			$dbLangs = CLanguage::GetList($b, $o, array("ACTIVE" => "Y"));
-			while ($arLangs = $dbLangs->Fetch())
+			$data = \Bitrix\Currency\CurrencyClassifier::getCurrency('BYR', array_keys($languages));
+			if (!empty($data))
 			{
-				IncludeModuleLangFile($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/currency/install_lang.php", $arLangs["LID"]);
-				$arFields = array(
-					"LID" => $arLangs["LID"],
-					"CURRENCY" => "BYR",
-					"FORMAT_STRING" => GetMessage("CUR_INSTALL_BYR_FORMAT_STRING") ? GetMessage("CUR_INSTALL_BYR_FORMAT_STRING") : "",
-					"FULL_NAME" => GetMessage("CUR_INSTALL_BYR_FULL_NAME"),
-					"DEC_POINT" => GetMessage("CUR_INSTALL_BYR_DEC_POINT"),
-					"THOUSANDS_VARIANT" => GetMessage("CUR_INSTALL_BYR_THOUSANDS_SEP"),
-					"THOUSANDS_SEP" => false,
-					"DECIMALS" => 2,
-					"HIDE_ZERO" => "Y"
-				);
-				if (!empty($arFields))
-					CCurrencyLang::Add($arFields);
+				foreach ($languages as $languageId => $upperLanguageId)
+				{
+					if (empty($data[$upperLanguageId]))
+						continue;
+					$fields = [
+						'LID' => $languageId,
+						'CURRENCY' => 'BYR',
+						'CREATED_BY' => null,
+						'MODIFIED_BY' => null,
+						'DATE_CREATE' => $datetimeEntity,
+						'TIMESTAMP_X' => $datetimeEntity,
+						'HIDE_ZERO' => 'Y',
+						'THOUSANDS_SEP' => null
+					] + array_intersect_key($data[$upperLanguageId], $whiteList);
+					$fields['FORMAT_STRING'] = str_replace('#VALUE#', '#', $fields['FORMAT_STRING']);
+					$resultCurrencyLang = \Bitrix\Currency\CurrencyLangTable::add($fields);
+					unset($resultCurrencyLang);
+				}
+				unset($languageId, $upperLanguageId);
 			}
+			unset($data);
 		}
 		break;
 	default:
@@ -157,12 +193,11 @@ if (WIZARD_INSTALL_DEMO_DATA && $IBLOCK_CATALOG_ID)
 	}
 }
 
-
-$dbResultList = CCatalogGroup::GetList(array(), array("BASE" => "Y"));
-if(!($dbResultList->Fetch()))
+$basePriceTypeId = \CCatalogGroup::GetBaseGroupId();
+if ($basePriceTypeId === null)
 {
 	$arFields = array();
-	$rsLanguage = CLanguage::GetList($by, $order, array());
+	$rsLanguage = CLanguage::GetList();
 	while($arLanguage = $rsLanguage->Fetch())
 	{
 		WizardServices::IncludeServiceLang("catalog.php", $arLanguage["ID"]);
@@ -171,6 +206,7 @@ if(!($dbResultList->Fetch()))
 	$arFields["BASE"] = "Y";
 	$arFields["SORT"] = 100;
 	$arFields["NAME"] = "BASE";
+	$arFields["XML_ID"] = "BASE";
 	$arFields["USER_GROUP"] = array(1);
 	$arFields["USER_GROUP_BUY"] = array(1);
 	CCatalogGroup::Add($arFields);
@@ -178,19 +214,19 @@ if(!($dbResultList->Fetch()))
 
 if($IBLOCK_CATALOG_ID == false)
 {
-	$permissions = Array(
-			"1" => "X",
-			"2" => "R"
-		);
-	$dbGroup = CGroup::GetList($by = "", $order = "", Array("STRING_ID" => "sale_administrator"));
+	$permissions = [
+		1 => CIBlockRights::FULL_ACCESS,
+		2 => CIBlockRights::PUBLIC_READ,
+	];
+	$dbGroup = CGroup::GetList('', '', Array("STRING_ID" => "sale_administrator"));
 	if($arGroup = $dbGroup -> Fetch())
 	{
-		$permissions[$arGroup["ID"]] = 'W';
+		$permissions[$arGroup["ID"]] = CIBlockRights::EDIT_ACCESS;
 	}
-	$dbGroup = CGroup::GetList($by = "", $order = "", Array("STRING_ID" => "content_editor"));
+	$dbGroup = CGroup::GetList('', '', Array("STRING_ID" => "content_editor"));
 	if($arGroup = $dbGroup -> Fetch())
 	{
-		$permissions[$arGroup["ID"]] = 'W';
+		$permissions[$arGroup["ID"]] = CIBlockRights::EDIT_ACCESS;
 	}
 
 	\Bitrix\Catalog\Product\Sku::disableUpdateAvailable();
@@ -212,6 +248,9 @@ if($IBLOCK_CATALOG_ID == false)
 	if ($IBLOCK_CATALOG_ID < 1)
 		return;
 
+	$iblock = new CIBlock;
+	$iblock->Update($IBLOCK_CATALOG_ID, array("LIST_MODE" => \Bitrix\Iblock\IblockTable::LIST_MODE_SEPARATE));
+
 	$_SESSION["WIZARD_CATALOG_IBLOCK_ID"] = $IBLOCK_CATALOG_ID;
 }
 else
@@ -227,4 +266,3 @@ else
 		$iblock->Update($IBLOCK_CATALOG_ID, array("LID" => $arSites));
 	}
 }
-?>

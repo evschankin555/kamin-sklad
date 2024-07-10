@@ -2,6 +2,8 @@
 <?$frame = $this->createFrame()->begin('')?>
 <?
 $bLeftAndRight = false;
+$optimusInstance = new COptimus();
+
 if(is_array($arResult["QUESTIONS"])){
 	foreach($arResult["QUESTIONS"] as $arQuestion){
 		if(strpos($arQuestion["STRUCTURE"][0]["FIELD_PARAM"],'left') !== false){
@@ -52,14 +54,14 @@ if(is_array($arResult["QUESTIONS"])){
 		<?if(is_array($arResult["QUESTIONS"])):?>
 			<?if(!$bLeftAndRight):?>
 				<?foreach($arResult["QUESTIONS"] as $FIELD_SID => $arQuestion):?>
-					<?COptimus::drawFormField($FIELD_SID, $arQuestion);?>
+					<?$optimusInstance->drawFormField($FIELD_SID, $arQuestion);?>
 				<?endforeach;?>
 			<?else:?>
 				<div class="form_left">
 					<?foreach($arResult["QUESTIONS"] as $FIELD_SID => $arQuestion):?>
 						<?if(strpos($arQuestion["STRUCTURE"][0]["FIELD_PARAM"],'left') !== false):?>
 <? if ($arQuestion["STRUCTURE"]["0"]["FIELD_TYPE"]=="checkbox") { ?><div class="filter filter_hide_star"><? } ?>
-							<?COptimus::drawFormField($FIELD_SID, $arQuestion);?>
+							<?$optimusInstance->drawFormField($FIELD_SID, $arQuestion);?>
 <? if ($arQuestion["STRUCTURE"]["0"]["FIELD_TYPE"]=="checkbox") { ?></div><? } ?>
 						<?endif;?>
 					<?endforeach;?>
@@ -68,7 +70,7 @@ if(is_array($arResult["QUESTIONS"])){
 					<?foreach($arResult["QUESTIONS"] as $FIELD_SID => $arQuestion):?>
 						<?if(strpos($arQuestion["STRUCTURE"][0]["FIELD_PARAM"],'left') === false):?>
 <? if ($arQuestion["STRUCTURE"]["0"]["FIELD_TYPE"]=="checkbox") { ?><div class="filter filter_hide_star"><? } ?>                        
-							<?COptimus::drawFormField($FIELD_SID, $arQuestion);?>
+							<?$optimusInstance->drawFormField($FIELD_SID, $arQuestion);?>
 <? if ($arQuestion["STRUCTURE"]["0"]["FIELD_TYPE"]=="checkbox") { ?></div><? } ?>                            
 						<?endif;?>
 					<?endforeach;?>

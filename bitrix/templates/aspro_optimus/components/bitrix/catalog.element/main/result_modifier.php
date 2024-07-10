@@ -175,7 +175,11 @@ if('Y' !== $arParams['ADD_DETAIL_TO_SLIDER'] && $arResult['DETAIL_PICTURE']){
 	// CIBlockPriceTools :: getSliderForItem() gibt ein Array DETAIL_PICTURE wenn WEITERE FOTOS leer, auch wenn ADD_DETAIL_TO_SLIDER == N
 	// unset($arResult['DETAIL_PICTURE']);
 }
-$productSlider = COptimus::getSliderForItemExt($arResult, $arParams['ADD_PICT_PROP'], 'Y' == $arParams['ADD_DETAIL_TO_SLIDER']);
+// Создаем экземпляр класса COptimus
+$optimusInstance = new COptimus();
+
+// Вызываем метод через экземпляр класса
+$productSlider = $optimusInstance->getSliderForItemExt($arResult, $arParams['ADD_PICT_PROP'], 'Y' == $arParams['ADD_DETAIL_TO_SLIDER']);
 
 if(is_array($arResult['DISPLAY_PROPERTIES']["DRAWING"]["FILE_VALUE"]))
 {
@@ -347,7 +351,11 @@ if ($arResult['CATALOG'] && isset($arResult['OFFERS']) && !empty($arResult['OFFE
 
 		$arOffer['MORE_PHOTO'] = array();
 		$arOffer['MORE_PHOTO_COUNT'] = 0;
-		$offerSlider = COptimus::getSliderForItemExt($arOffer, $arParams['OFFER_ADD_PICT_PROP'], true); // $arParams['ADD_DETAIL_TO_SLIDER'] == 'Y'
+// Создаем экземпляр класса COptimus
+        $optimusInstance = new COptimus();
+
+// Вызываем метод через экземпляр класса
+        $offerSlider = $optimusInstance->getSliderForItemExt($arOffer, $arParams['OFFER_ADD_PICT_PROP'], true); // $arParams['ADD_DETAIL_TO_SLIDER'] == 'Y'
 
 		$arOffer['MORE_PHOTO'] = $offerSlider;
 
@@ -464,6 +472,9 @@ if ($arResult['CATALOG'] && isset($arResult['OFFERS']) && !empty($arResult['OFFE
 	$arResult['MIN_BASIS_PRICE'] = false;
 	$arPropsSKU=array();
 	$arOfferProps = implode(';', $arParams['OFFERS_CART_PROPERTIES']);
+
+    // Создаем экземпляр класса COptimus
+    $optimusInstance = new COptimus();
 	if('TYPE_1' == $arParams['TYPE_SKU'] && $arResult['OFFERS'] ){
 		foreach ($arResult['OFFERS'] as $keyOffer => $arOffer)
 		{
@@ -501,13 +512,15 @@ if ($arResult['CATALOG'] && isset($arResult['OFFERS']) && !empty($arResult['OFFE
 			}
 			reset($arOffer['MORE_PHOTO']);
 
-			$totalCount = COptimus::GetTotalCount($arOffer);
-			$arOffer['IS_OFFER'] = 'Y';
-			$arOffer['IBLOCK_ID'] = $arResult['IBLOCK_ID'];
-			$arAddToBasketData = COptimus::GetAddToBasketArray($arOffer, $totalCount, $arParams["DEFAULT_COUNT"], $arParams["BASKET_URL"], false, $arItemIDs["ALL_ITEM_IDS"], 'big_btn w_icons', $arParams);
-			$arAddToBasketData["HTML"] = str_replace('data-item', 'data-props="'.$arOfferProps.'" data-item', $arAddToBasketData["HTML"]);
 
-			if($arOffer['PRICES'])
+// Вызываем методы через экземпляр класса
+            $totalCount = $optimusInstance->GetTotalCount($arOffer);
+            $arOffer['IS_OFFER'] = 'Y';
+            $arOffer['IBLOCK_ID'] = $arResult['IBLOCK_ID'];
+            $arAddToBasketData = $optimusInstance->GetAddToBasketArray($arOffer, $totalCount, $arParams["DEFAULT_COUNT"], $arParams["BASKET_URL"], false, $arItemIDs["ALL_ITEM_IDS"], 'big_btn w_icons', $arParams);
+            $arAddToBasketData["HTML"] = str_replace('data-item', 'data-props="'.$arOfferProps.'" data-item', $arAddToBasketData["HTML"]);
+
+            if($arOffer['PRICES'])
 			{
 				foreach($arOffer['PRICES'] as $priceKey => $arOfferPrice)
 				{
@@ -538,7 +551,7 @@ if ($arResult['CATALOG'] && isset($arResult['OFFERS']) && !empty($arResult['OFFE
 				'CATALOG_SUBSCRIBE' => $arOffer['CATALOG_SUBSCRIBE'],
 				'SLIDER' => $arOffer['MORE_PHOTO'],
 				'SLIDER_COUNT' => $arOffer['MORE_PHOTO_COUNT'],
-				'AVAILIABLE' => COptimus::GetQuantityArray($arOffer['CATALOG_QUANTITY'], array(), "Y"),
+				'AVAILIABLE' => $optimusInstance->GetQuantityArray($arOffer['CATALOG_QUANTITY'], array(), "Y"),
 				'URL' => $arOffer['DETAIL_PAGE_URL'],
 				'CONFIG' => $arAddToBasketData,
 				'HTML' => $arAddToBasketData["HTML"],
@@ -562,7 +575,7 @@ if ($arResult['CATALOG'] && isset($arResult['OFFERS']) && !empty($arResult['OFFE
 	}
 	/*set min_price_id*/
 	if('TYPE_1' != $arParams['TYPE_SKU'] && $arResult['OFFERS'] ){
-		$arResult['MIN_PRICE'] = COptimus::getMinPriceFromOffersExt(
+		$arResult['MIN_PRICE'] = $optimusInstance->getMinPriceFromOffersExt(
 			$arResult['OFFERS'],
 			$boolConvert ? $arResult['CONVERT_CURRENCY']['CURRENCY_ID'] : $strBaseCurrency
 		);
@@ -819,34 +832,82 @@ if ($arResult['MODULES']['currency']){
 }
 
 /*akc*/
+// Создаем экземпляр класса COptimusCache
+$optimusCacheInstance = new COptimusCache();
 if (intVal($arParams["IBLOCK_STOCK_ID"])){
-	$arSelect = array("ID", "IBLOCK_ID", "IBLOCK_SECTION_ID", "NAME", "PREVIEW_PICTURE", "PREVIEW_TEXT", "DETAIL_PAGE_URL");
-	$arResult["STOCK"]=COptimusCache::CIBLockElement_GetList(array('CACHE' => array("TAG" => COptimusCache::GetIBlockCacheTag($arParams["IBLOCK_STOCK_ID"]))), array("IBLOCK_ID" => $arParams["IBLOCK_STOCK_ID"], "ACTIVE"=>"Y", "ACTIVE_DATE" => "Y", "PROPERTY_LINK" => $arResult["ID"]), false, false, $arSelect);
+    $arSelect = array("ID", "IBLOCK_ID", "IBLOCK_SECTION_ID", "NAME", "PREVIEW_PICTURE", "PREVIEW_TEXT", "DETAIL_PAGE_URL");
+
+
+    // Получаем тег кеша
+    $cacheTag = $optimusCacheInstance->GetIBlockCacheTag($arParams["IBLOCK_STOCK_ID"]);
+
+    // Вызываем метод CIBLockElement_GetList через экземпляр класса
+    $arResult["STOCK"] = $optimusCacheInstance->CIBLockElement_GetList(
+        array('CACHE' => array("TAG" => $cacheTag)),
+        array(
+            "IBLOCK_ID" => $arParams["IBLOCK_STOCK_ID"],
+            "ACTIVE" => "Y",
+            "ACTIVE_DATE" => "Y",
+            "PROPERTY_LINK" => $arResult["ID"]
+        ),
+        false,
+        false,
+        $arSelect
+    );
 }
 
 /*services*/
 if( !empty($arResult["PROPERTIES"]["SERVICES"]["VALUE"]) ){
-	$arSelect = array("ID", "IBLOCK_ID", "IBLOCK_SECTION_ID", "NAME", "PREVIEW_PICTURE", "PREVIEW_TEXT", "DETAIL_PAGE_URL");
-	$arResult["SERVICES"]=COptimusCache::CIBLockElement_GetList(array('CACHE' => array("TAG" => COptimusCache::GetIBlockCacheTag($arResult["PROPERTIES"]["SERVICES"]["LINK_IBLOCK_ID"]))), array("IBLOCK_ID" => $arResult["PROPERTIES"]["SERVICES"]["LINK_IBLOCK_ID"], "ACTIVE"=>"Y", "ACTIVE_DATE" => "Y", "ID" => $arResult["PROPERTIES"]["SERVICES"]["VALUE"]), false, false, $arSelect);
+    $arSelect = array("ID", "IBLOCK_ID", "IBLOCK_SECTION_ID", "NAME", "PREVIEW_PICTURE", "PREVIEW_TEXT", "DETAIL_PAGE_URL");
+
+    // Получаем тег кеша
+    $cacheTag = $optimusCacheInstance->GetIBlockCacheTag($arResult["PROPERTIES"]["SERVICES"]["LINK_IBLOCK_ID"]);
+
+    // Вызываем метод CIBLockElement_GetList через экземпляр класса
+    $arResult["SERVICES"] = $optimusCacheInstance->CIBLockElement_GetList(
+        array('CACHE' => array("TAG" => $cacheTag)),
+        array("IBLOCK_ID" => $arResult["PROPERTIES"]["SERVICES"]["LINK_IBLOCK_ID"], "ACTIVE" => "Y", "ACTIVE_DATE" => "Y", "ID" => $arResult["PROPERTIES"]["SERVICES"]["VALUE"]),
+        false,
+        false,
+        $arSelect
+    );
 }
 
 /*brand item*/
 $arBrand = array();
 if(strlen($arResult["DISPLAY_PROPERTIES"]["BRAND"]["VALUE"]) && $arResult["PROPERTIES"]["BRAND"]["LINK_IBLOCK_ID"]){
-	$arBrand = COptimusCache::CIBLockElement_GetList(array('CACHE' => array("MULTI" =>"N", "TAG" => COptimusCache::GetIBlockCacheTag($arResult["PROPERTIES"]["BRAND"]["LINK_IBLOCK_ID"]))), array("IBLOCK_ID" => $arResult["PROPERTIES"]["BRAND"]["LINK_IBLOCK_ID"], "ACTIVE"=>"Y", "ID" => $arResult["DISPLAY_PROPERTIES"]["BRAND"]["VALUE"]), false, false, array("*","PROPERTY_FLAG"));
-	if($arBrand){
-		if($arParams["SHOW_BRAND_PICTURE"] == "Y" && ($arBrand["PREVIEW_PICTURE"] || $arBrand["DETAIL_PICTURE"])){
-			$arBrand["IMAGE"] = CFile::ResizeImageGet(($arBrand["PREVIEW_PICTURE"] ? $arBrand["PREVIEW_PICTURE"] : $arBrand["DETAIL_PICTURE"]), array("width" => 120, "height" => 40), BX_RESIZE_IMAGE_PROPORTIONAL_ALT, true);
-			$arBrand["FLAG"] = CFile::GetPath($arBrand["PROPERTY_FLAG_VALUE"]);
-		}
-	}
+
+    // Получаем тег кеша
+    $cacheTag = $optimusCacheInstance->GetIBlockCacheTag($arResult["PROPERTIES"]["BRAND"]["LINK_IBLOCK_ID"]);
+
+    // Вызываем метод CIBLockElement_GetList через экземпляр класса
+    $arBrand = $optimusCacheInstance->CIBLockElement_GetList(
+        array('CACHE' => array("MULTI" => "N", "TAG" => $cacheTag)),
+        array("IBLOCK_ID" => $arResult["PROPERTIES"]["BRAND"]["LINK_IBLOCK_ID"], "ACTIVE" => "Y", "ID" => $arResult["DISPLAY_PROPERTIES"]["BRAND"]["VALUE"]),
+        false,
+        false,
+        array("*","PROPERTY_FLAG")
+    );
+    if($arBrand){
+        if($arParams["SHOW_BRAND_PICTURE"] == "Y" && ($arBrand["PREVIEW_PICTURE"] || $arBrand["DETAIL_PICTURE"])){
+            $arBrand["IMAGE"] = CFile::ResizeImageGet(
+                ($arBrand["PREVIEW_PICTURE"] ? $arBrand["PREVIEW_PICTURE"] : $arBrand["DETAIL_PICTURE"]),
+                array("width" => 120, "height" => 40),
+                BX_RESIZE_IMAGE_PROPORTIONAL_ALT,
+                true
+            );
+            $arBrand["FLAG"] = CFile::GetPath($arBrand["PROPERTY_FLAG_VALUE"]);
+        }
+    }
 }
 
-$arResult["BRAND_ITEM"]=$arBrand;
+$arResult["BRAND_ITEM"] = $arBrand;
 
 /*stores product*/
-$arStores=COptimusCache::CCatalogStore_GetList(array(), array("ACTIVE" => "Y"), false, false, array());
+// Вызываем метод CCatalogStore_GetList через экземпляр класса
+$arStores = $optimusCacheInstance->CCatalogStore_GetList(array(), array("ACTIVE" => "Y"), false, false, array());
 $arResult["STORES_COUNT"] = count($arStores);
+
 
 /*get tizers section*/
 if(is_array($arParams["SECTION_TIZER"]) && $arParams["SECTION_TIZER"]){

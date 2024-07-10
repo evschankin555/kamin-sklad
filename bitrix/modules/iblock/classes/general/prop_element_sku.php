@@ -1,29 +1,33 @@
-<?
-use Bitrix\Main\Localization\Loc,
-	Bitrix\Iblock;
+<?php
 
-Loc::loadMessages(__FILE__);
+use Bitrix\Main\Localization\Loc;
+use Bitrix\Iblock;
 
 class CIBlockPropertySKU extends CIBlockPropertyElementAutoComplete
 {
-	const USER_TYPE = 'SKU';
+	/** @deprecated */
+	public const USER_TYPE = Iblock\PropertyTable::USER_TYPE_SKU;
 
 	public static function GetUserTypeDescription()
 	{
-		return array(
-			"PROPERTY_TYPE" => Iblock\PropertyTable::TYPE_ELEMENT,
-			"USER_TYPE" => self::USER_TYPE,
-			"DESCRIPTION" => Loc::getMessage('BT_UT_SKU_DESCRIPTION'),
-			"GetPropertyFieldHtml" => array(__CLASS__, "GetPropertyFieldHtml"),
-			"GetPropertyFieldHtmlMulty" => array(__CLASS__, "GetPropertyFieldHtml"),
-			"GetPublicViewHTML" => array(__CLASS__, "GetPublicViewHTML"),
-			"GetPublicEditHTML" => array(__CLASS__, "GetPublicEditHTML"),
-			"GetAdminListViewHTML" => array(__CLASS__,"GetAdminListViewHTML"),
-			"GetAdminFilterHTML" => array(__CLASS__,'GetAdminFilterHTML'),
-			"GetSettingsHTML" => array(__CLASS__,'GetSettingsHTML'),
-			"PrepareSettings" => array(__CLASS__,'PrepareSettings'),
-			"AddFilterFields" => array(__CLASS__,'AddFilterFields')
-		);
+		return [
+			'PROPERTY_TYPE' => Iblock\PropertyTable::TYPE_ELEMENT,
+			'USER_TYPE' => Iblock\PropertyTable::USER_TYPE_SKU,
+			'DESCRIPTION' => Loc::getMessage('BT_UT_SKU_DESCRIPTION'),
+			'GetPropertyFieldHtml' => [__CLASS__, 'GetPropertyFieldHtml'],
+			'GetPropertyFieldHtmlMulty' => [__CLASS__, 'GetPropertyFieldHtml'],
+			'GetPublicViewHTML' => [__CLASS__, 'GetPublicViewHTML'],
+			'GetPublicEditHTML' => [__CLASS__, 'GetPublicEditHTML'],
+			'GetAdminListViewHTML' => [__CLASS__,'getAdminListViewHTMLExtended'],
+			'GetAdminFilterHTML' => [__CLASS__,'GetAdminFilterHTML'],
+			'GetSettingsHTML' => [__CLASS__,'GetSettingsHTML'],
+			'PrepareSettings' => [__CLASS__,'PrepareSettings'],
+			'AddFilterFields' => [__CLASS__,'AddFilterFields'],
+			'GetUIFilterProperty' => [__CLASS__, 'GetUIFilterProperty'],
+			'GetUIEntityEditorProperty' => [__CLASS__, 'GetUIEntityEditorProperty'],
+			'GetUIEntityEditorPropertyEditHtml' => [__CLASS__, 'GetUIEntityEditorPropertyEditHtml'],
+			'GetUIEntityEditorPropertyViewHtml' => [__CLASS__, 'GetUIEntityEditorPropertyViewHtml'],
+		];
 	}
 
 	public static function PrepareSettings($arFields)
@@ -42,8 +46,8 @@ class CIBlockPropertySKU extends CIBlockPropertyElementAutoComplete
 		 */
 		$arResult = parent::PrepareSettings($arFields);
 		$arResult['SHOW_ADD'] = 'N';
-		$arFields['MULTIPLE'] = 'N';
 		$arFields['USER_TYPE_SETTINGS'] = $arResult;
+		$arFields['MULTIPLE'] = 'N';
 
 		return $arFields;
 	}
@@ -87,6 +91,72 @@ class CIBlockPropertySKU extends CIBlockPropertyElementAutoComplete
 
 		return $strResult;
 	}
+
+	public static function GetPublicViewHTML($arProperty, $arValue, $strHTMLControlName)
+	{
+		$elementId = (int)($arValue['VALUE'] ?? 0);
+		$element = self::getElement($elementId);
+		if (!$element)
+		{
+			return '';
+		}
+
+		return htmlspecialcharsbx($element['NAME']) . ' [' . $elementId . ']';
+	}
+
+	public static function getAdminListViewHTMLExtended(array $property, array $value, $control): string
+	{
+		$result = '';
+		if ($value['VALUE'])
+		{
+			$isPublicMode = (defined("PUBLIC_MODE") && (int)PUBLIC_MODE === 1);
+
+			if ($isPublicMode)
+			{
+				$result .= self::GetPublicViewHTML($property, $value, $control);
+			}
+			else
+			{
+				$result .= self::GetAdminListViewHTML($property, $value, $control);
+			}
+		}
+
+		return $result;
+	}
+
+	public static function GetUIEntityEditorProperty($settings, $value)
+	{
+		$result = parent::GetUIEntityEditorProperty($settings, $value);
+		$result['allowedMultiple'] = false;
+
+		return $result;
+	}
+
+	private static function getElement(int $elementId): ?array
+	{
+		if ($elementId <= 0)
+		{
+			return null;
+		}
+
+		$element = CIBlockElement::GetList(
+			[],
+			[
+				'ID' => $elementId,
+			],
+			false,
+			false,
+			['ID', 'IBLOCK_ID', 'NAME']
+		)->Fetch();
+
+		if ($element)
+		{
+			return $element;
+		}
+
+		return null;
+	}
 }
 
-define('BT_UT_SKU_CODE', CIBlockPropertySKU::USER_TYPE); //deprecated
+/** @deprecated */
+const BT_UT_SKU_CODE = Iblock\PropertyTable::USER_TYPE_SKU;

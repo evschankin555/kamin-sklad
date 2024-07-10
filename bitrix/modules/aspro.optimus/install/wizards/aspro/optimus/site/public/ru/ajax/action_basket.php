@@ -21,7 +21,8 @@
 				break;
 		}
 	}
-	$arItems=COptimus::getBasketItems($iblockID, "ID");
+	$COptimus = new COptimus();
+	$arItems=$COptimus->getBasketItems($iblockID, "ID");
 	foreach($arItems[$type] as $id){
 		CSaleBasket::Delete($id);
 	}
@@ -31,4 +32,6 @@
 	\Bitrix\Main\Loader::includeModule('sale');
 	CSaleBasket::Delete($_POST["delete_top_item_id"]);
 }?>
-<?COptimusCache::ClearCacheByTag('sale_basket');?>
+<?
+$COptimusCache = new COptimusCache();
+$COptimusCache->ClearCacheByTag('sale_basket');?>

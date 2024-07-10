@@ -7,6 +7,8 @@ $APPLICATION->AddHeadString('<link href="https://'.$_SERVER["HTTP_HOST"] .$arRes
 use Bitrix\Main\Loader;
 use Bitrix\Main\ModuleManager;
 global $simularArr;
+$optimusInstance = new COptimus();
+
 $simularArr["IBLOCK_SECTION_ID"]=$arResult["IBLOCK_SECTION_ID"];
 $simularArr["MINIMUM_PRICE"]=$arResult["PROPERTIES"]["MINIMUM_PRICE"]["VALUE"];
 
@@ -169,7 +171,7 @@ while ($ar_res = $db_res->Fetch())
 $discounts=md5($discounts);
 
 $arResult["strMainID"] = $this->GetEditAreaId($arResult['ID']);
-$arItemIDs=COptimus::GetItemsIDs($arResult, "Y");
+$arItemIDs=$optimusInstance->GetItemsIDs($arResult, "Y");
 ?>
 
 <div class="contmyold">

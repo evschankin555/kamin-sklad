@@ -1,4 +1,5 @@
 <?
+mb_internal_encoding('UTF-8');
 define("BX_USE_MYSQLI", true);
 define("DBPersistent", false);
 $DBType = "mysql";
@@ -6,8 +7,8 @@ $DBHost = "a217442.mysql.mchost.ru";
 $DBLogin = "a217442_ks";
 $DBPassword = "49yQruJU7d";
 $DBName = "a217442_ks";
-$DBDebug = false;
-$DBDebugToFile = false;
+$DBDebug = true;
+$DBDebugToFile = true;
 
 define("DELAY_DB_CONNECT", true);
 define("CACHED_b_file", 3600);

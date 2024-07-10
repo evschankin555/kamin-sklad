@@ -1,11 +1,14 @@
 <?if(isset($_SERVER["HTTP_X_REQUESTED_WITH"]) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == "xmlhttprequest") die();?>
-<?IncludeTemplateLangFile(__FILE__);?>
+<?IncludeTemplateLangFile(__FILE__);
+$optimusInstance = new COptimus();
 
-							<?if(!COptimus::IsMainPage()):?>
+?>
+
+							<?if(!$optimusInstance->IsMainPage()):?>
 								</div> <?// .container?>
 							<?endif;?>
 						</div>                        
-					<?if(!COptimus::IsOrderPage() && !COptimus::IsBasketPage()):?>
+					<?if(!$optimusInstance->IsOrderPage() && !$optimusInstance->IsBasketPage()):?>
 						</div> <?// .right_block?>
 					<?endif;?>                                              
 				</div> <?// .wrapper_inner?>				
@@ -230,8 +233,8 @@ $detect = new \Bitrix\Conversion\Internals\MobileDetect;
 
 
 <?
-COptimus::setFooterTitle();
-COptimus::showFooterBasket();
+$optimusInstance->setFooterTitle();
+$optimusInstance->showFooterBasket();
 
 $APPLICATION->SetAdditionalCSS(SITE_TEMPLATE_PATH.'/js/fancybox/helpers/jquery.fancybox-buttons.css', true);
 $APPLICATION->SetAdditionalCSS(SITE_TEMPLATE_PATH.'/js/fancybox/helpers/jquery.fancybox-thumbs.css', true);

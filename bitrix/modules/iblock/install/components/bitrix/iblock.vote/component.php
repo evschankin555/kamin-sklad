@@ -1,36 +1,58 @@
-<?
-//Ð¡Ð»ÐµÐ´ÑƒÐ¹Ñ‚Ðµ ÐºÐ¾Ð¼Ð¼ÐµÐ½Ñ‚Ð°Ñ€Ð¸ÑÐ¼ Ð²Ð¸Ð´Ð° Ð§Ð¸ÑÐ»Ð¾* Ð´Ð»Ñ Ð¾Ñ‚ÑÐ»ÐµÐ¶Ð¸Ð²Ð°Ð½Ð¸Ñ Ð¿ÑƒÑ‚Ð¸ Ð¸ÑÐ¿Ð¾Ð»Ð½ÐµÐ½Ð¸Ñ.
+<?php
+//Ñëåäóéòå êîììåíòàðèÿì âèäà ×èñëî* äëÿ îòñëåæèâàíèÿ ïóòè èñïîëíåíèÿ.
 
 //21*
-//Ð’ ÑÐ»ÑƒÑ‡Ð°Ðµ AJAX Ð·Ð°Ð¿Ñ€Ð¾ÑÐ° Ð¿Ð¾Ð¿Ð°Ð´ÐµÐ¼ ÑÑŽÐ´Ð°
+//Â ñëó÷àå AJAX çàïðîñà ïîïàäåì ñþäà
 if(!defined("B_PROLOG_INCLUDED") && isset($_REQUEST["AJAX_CALL"]) && $_REQUEST["AJAX_CALL"]=="Y")
 {
 	define('PUBLIC_AJAX_MODE', true);
+	define('NOT_CHECK_PERMISSIONS', true);
+
 	require_once($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include/prolog_before.php");
 	/** @global CMain $APPLICATION */
 	global $APPLICATION;
 
 	//22*
-	//ÐŸÑ€Ð¾Ð²ÐµÑ€ÑÐ¼: ÐºÐ»ÑŽÑ‡ Ð¿Ð¾Ð´Ð¾ÑˆÐµÐ»?
+	//Ïðîâåðÿì: êëþ÷ ïîäîøåë?
 	if(CModule::IncludeModule("iblock"))
 	{
-		$arCache = CIBlockRSS::GetCache($_REQUEST["SESSION_PARAMS"]);
-		if($arCache && ($arCache["VALID"] == "Y"))
+		$arCache = null;
+		if (isset($_REQUEST["SESSION_PARAMS"]) && is_string($_REQUEST["SESSION_PARAMS"]) && $_REQUEST["SESSION_PARAMS"] !== '')
+		{
+			$arCache = CIBlockRSS::GetCache($_REQUEST["SESSION_PARAMS"]);
+		}
+		if (is_array($arCache) && ($arCache["VALID"] ?? '') === "Y")
 		{
 			//23*
-			//Ð”Ð°!
-			//Ð—Ð°Ð±Ð¸Ñ€Ð°ÐµÐ¼ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ "Ð¿Ð¾Ð´ÐºÐ»ÑŽÑ‡ÐµÐ½Ð¸Ñ"
-			$arParams = unserialize($arCache["CACHE"]);
-			//18*
-			//Ð”Ð¾Ð±Ð¸Ð²Ð°ÐµÐ¼ Ñ‚ÐµÐ¼Ð¸, ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ðµ Ð´Ð¾ÑÑ‚ÑƒÐ¿Ð½Ñ‹ "ÑÐ½Ð°Ñ€ÑƒÐ¶Ð¸"
-			foreach($arParams["PAGE_PARAMS"] as $param_name)
+			//Äà!
+			//Çàáèðàåì ïàðàìåòðû "ïîäêëþ÷åíèÿ"
+			$arParams = [];
+			if (CheckSerializedData($arCache["CACHE"]))
 			{
-				if(!array_key_exists($param_name, $arParams))
-					$arParams[$param_name] = $_REQUEST["PAGE_PARAMS"][$param_name];
+				$arParams = unserialize($arCache["CACHE"], ['allowed_classes' => false]);
+			}
+			if (!is_array($arParams))
+			{
+				$arParams = [];
+			}
+			//18*
+			//Äîáèâàåì òåìè, êîòîðûå äîñòóïíû "ñíàðóæè"
+			if (!empty($arParams["PAGE_PARAMS"]) && is_array($arParams["PAGE_PARAMS"]))
+			{
+				foreach ($arParams["PAGE_PARAMS"] as $param_name)
+				{
+					if (!array_key_exists($param_name, $arParams))
+					{
+						if (isset($_REQUEST["PAGE_PARAMS"][$param_name]))
+						{
+							$arParams[$param_name] = $_REQUEST["PAGE_PARAMS"][$param_name];
+						}
+					}
+				}
 			}
 			//24*
-			//Ð­Ñ‚Ð° Ð¼Ð°Ð³Ð¸Ñ Ð¿Ð¾Ð·Ð²Ð¾Ð»ÑÐµÑ‚ Ð½Ð°Ð¼ Ð¿Ñ€Ð°Ð²Ð¸Ð»ÑŒÐ½Ð¾ Ð¾Ð¿Ñ€ÐµÐ´ÐµÐ»Ð¸Ñ‚ÑŒ
-			//Ñ‚ÐµÐºÑƒÑ‰Ð¸Ð¹ ÑˆÐ°Ð±Ð»Ð¾Ð½ ÐºÐ¾Ð¼Ð¿Ð¾Ð½ÐµÐ½Ñ‚Ð° (Ñ ÑƒÑ‡ÐµÑ‚Ð¾Ð¼ Ñ‚ÐµÐ¼Ñ‹)
+			//Ýòà ìàãèÿ ïîçâîëÿåò íàì ïðàâèëüíî îïðåäåëèòü
+			//òåêóùèé øàáëîí êîìïîíåíòà (ñ ó÷åòîì òåìû)
 			if(array_key_exists("PARENT_NAME", $arParams))
 			{
 				$component = new CBitrixComponent();
@@ -42,15 +64,14 @@ if(!defined("B_PROLOG_INCLUDED") && isset($_REQUEST["AJAX_CALL"]) && $_REQUEST["
 				$component = null;
 			}
 			//25*
-			//ÐŸÐ¾Ð´ÐºÐ»ÑŽÑ‡Ð°ÐµÐ¼ ÐºÐ¾Ð¼Ð¿Ð¾Ð½ÐµÐ½Ñ‚
-			//Ð ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð°Ñ‚ ÐµÐ³Ð¾ Ñ€Ð°Ð±Ð¾Ñ‚Ñ‹ (div) Ð·Ð°Ð¼ÐµÐ½Ð¸Ñ‚ Ñ‚Ð¾Ñ‚, Ñ‡Ñ‚Ð¾ ÑÐµÐ¹Ñ‡Ð°Ñ Ñƒ ÐºÐ»Ð¸ÐµÐ½Ñ‚Ð° Ð² Ð±Ñ€Ð°ÑƒÐ·ÐµÑ€Ðµ
+			//Ïîäêëþ÷àåì êîìïîíåíò
+			//Ðåçóëüòàò åãî ðàáîòû (div) çàìåíèò òîò, ÷òî ñåé÷àñ ó êëèåíòà â áðàóçåðå
 			$arParams["AJAX_CALL"] = "Y";
 			$APPLICATION->IncludeComponent($arParams["COMPONENT_NAME"], $arParams["TEMPLATE_NAME"], $arParams, $component);
 		}
 	}
 
 	CMain::FinalActions();
-	die();
 }
 
 if(!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED!==true) die();
@@ -75,17 +96,30 @@ if(!CModule::IncludeModule("iblock"))
 /************************************************
 	Processing of received parameters
 *************************************************/
+
+$arParams['IBLOCK_ID'] ??= 0;
+$arParams['ELEMENT_ID'] ??= 0;
+$arParams['~ELEMENT_CODE'] ??= '';
+$arParams['ELEMENT_CODE'] ??= '';
+
+$arParams['DISPLAY_AS_RATING'] ??= 'rating';
+$arParams['READ_ONLY'] ??= '';
+$arParams['SHOW_RATING'] ??= 'N';
+$arParams['SET_STATUS_404'] ??= 'N';
+$arParams['MESSAGE_404'] ??= '';
+
 $bAjax = isset($arParams["AJAX_CALL"]) && $arParams["AJAX_CALL"] == "Y";
 $arParams = array(
-	"IBLOCK_ID" => intval($arParams["IBLOCK_ID"]),
-	"ELEMENT_ID" => intval($arParams["ELEMENT_ID"]),
+	"IBLOCK_ID" => (int)$arParams["IBLOCK_ID"],
+	"ELEMENT_ID" => (int)$arParams["ELEMENT_ID"],
 	"MAX_VOTE" => intval($arParams["MAX_VOTE"])<=0? 5: intval($arParams["MAX_VOTE"]),
-	"VOTE_NAMES" => is_array($arParams["VOTE_NAMES"])? $arParams["VOTE_NAMES"]: array(),
+	"VOTE_NAMES" => isset($arParams["VOTE_NAMES"]) && is_array($arParams["VOTE_NAMES"])? $arParams["VOTE_NAMES"]: array(),
 	"CACHE_TYPE" => $arParams["CACHE_TYPE"],
 	"CACHE_TIME" => $arParams["CACHE_TIME"],
 	"DISPLAY_AS_RATING" => $arParams["DISPLAY_AS_RATING"]=="vote_avg"? "vote_avg": "rating",
 	"READ_ONLY" => $arParams["READ_ONLY"],
 	"ELEMENT_CODE" => $arParams["ELEMENT_CODE"],
+	"~ELEMENT_CODE" => $arParams["~ELEMENT_CODE"],
 	"SHOW_RATING" => $arParams["SHOW_RATING"]=="Y"? "Y": "N",
 	"SET_STATUS_404" => $arParams["SET_STATUS_404"]=="Y"? "Y": "N",
 	"MESSAGE_404" => $arParams["MESSAGE_404"],
@@ -112,7 +146,7 @@ if($arParams["ELEMENT_ID"] <= 0)
 	Any actions without cache
 *****************************************/
 //26*
-//Ð¡ÑŽÐ´Ð° Ð´Ð¾ÑˆÐµÐ» Ð² Ñ‚Ð¾Ð¼ Ñ‡Ð¸ÑÐ»Ðµ Ð¸ AJAX Ð·Ð°Ð¿Ñ€Ð¾Ñ
+//Ñþäà äîøåë â òîì ÷èñëå è AJAX çàïðîñ
 if(
 	$_SERVER["REQUEST_METHOD"] == "POST"
 	&& !empty($_REQUEST["vote"])
@@ -122,7 +156,7 @@ if(
 {
 	if(!is_array($_SESSION["IBLOCK_RATING"]))
 		$_SESSION["IBLOCK_RATING"] = Array();
-	$RATING = intval($_REQUEST["rating"])+1;
+	$RATING = intval($_REQUEST["rating"] ?? 0)+1;
 	if($RATING>0 && $RATING<=$arParams["MAX_VOTE"])
 	{
 		$ELEMENT_ID = intval($_REQUEST["vote_id"]);
@@ -211,16 +245,16 @@ if(
 		}
 	}
 	//27*
-	//ÐÐ°Ð¼ Ð½ÐµÑ‚ Ð½ÐµÐ¾Ð±Ñ…Ð¾Ð´Ð¸Ð¼Ð¾ÑÑ‚Ð¸ Ð´ÐµÐ»Ð°Ñ‚ÑŒ Ñ€ÐµÐ´Ð¸Ñ€ÐµÐºÑ‚ Ð´Ð»Ñ Ð¾Ð±Ð½Ð¾Ð²Ð»ÐµÐ½Ð¸Ñ Ð´Ð°Ð½Ð½Ñ‹Ñ…
-	//Ð² Ð°ÑÐºÑ Ñ€ÐµÐ¶Ð¸Ð¼Ðµ
-	//Ð´Ð° Ð¸ Ð½Ðµ Ð¿Ñ€Ð¸Ð²ÐµÐ´ÐµÑ‚ ÑÑ‚Ð¾ Ð½Ð¸ Ðº Ñ‡ÐµÐ¼Ñƒ
+	//Íàì íåò íåîáõîäèìîñòè äåëàòü ðåäèðåêò äëÿ îáíîâëåíèÿ äàííûõ
+	//â àÿêñ ðåæèìå
+	//äà è íå ïðèâåäåò ýòî íè ê ÷åìó
 	if($_REQUEST["AJAX_CALL"]!="Y")
 		LocalRedirect(!empty($_REQUEST["back_page"])?$_REQUEST["back_page"]:$APPLICATION->GetCurPageParam());
 }
 //28*
-//ÐÐ°Ñ‡Ð¸Ð½Ð°ÐµÐ¼ Ð¸ÑÐ¿Ð¾Ð»Ð½ÑÑ‚ÑŒ "ÑˆÐ°Ð±Ð»Ð¾Ð½"
+//Íà÷èíàåì èñïîëíÿòü "øàáëîí"
 
-$bVoted = (is_array($_SESSION["IBLOCK_RATING"]) && array_key_exists($arParams["ELEMENT_ID"], $_SESSION["IBLOCK_RATING"]))? 1: 0;
+$bVoted = (isset($_SESSION["IBLOCK_RATING"]) && is_array($_SESSION["IBLOCK_RATING"]) && array_key_exists($arParams["ELEMENT_ID"], $_SESSION["IBLOCK_RATING"]))? 1: 0;
 if($this->StartResultCache(false, array($USER->GetGroups(), $bVoted)))
 {
 	if ($bAjax)
@@ -255,7 +289,7 @@ if($this->StartResultCache(false, array($USER->GetGroups(), $bVoted)))
 		$arResult["VOTE_NAMES"] = array();
 		foreach($arParams["VOTE_NAMES"] as $k=>$v)
 		{
-			if(strlen($v)>0)
+			if($v <> '')
 				$arResult["VOTE_NAMES"][]=htmlspecialcharsbx($v);
 			if(count($arResult["VOTE_NAMES"])>=$arParams["MAX_VOTE"])
 				break;
@@ -265,6 +299,17 @@ if($this->StartResultCache(false, array($USER->GetGroups(), $bVoted)))
 				$arResult["VOTE_NAMES"][$i]=$i+1;
 
 		$arResult["VOTED"] = $bVoted;
+
+		// Hack for custom templates
+		if ($arParams['DISPLAY_AS_RATING'] === 'rating')
+		{
+			if (!isset($arResult["PROPERTIES"]["rating"]))
+			{
+				$arResult["PROPERTIES"]["rating"] = [
+					'VALUE' => 0,
+				];
+			}
+		}
 
 		$this->SetResultCacheKeys(array(
 			"AJAX",
@@ -282,11 +327,11 @@ if($this->StartResultCache(false, array($USER->GetGroups(), $bVoted)))
 	}
 }
 
-if(array_key_exists("AJAX", $arResult) && ($_REQUEST["AJAX_CALL"] != "Y"))
+if(array_key_exists("AJAX", $arResult) && ($_REQUEST["AJAX_CALL"] ?? '') !== "Y")
 {
 	//13*
-	//Ð¡Ð¾Ñ…Ñ€Ð°Ð½ÑÐµÐ¼ Ð² Ð‘Ð” ÐºÐµÑˆ
-	if(!is_array($_SESSION["iblock.vote"]))
+	//Ñîõðàíÿåì â ÁÄ êåø
+	if(!isset($_SESSION["iblock.vote"]) || !is_array($_SESSION["iblock.vote"]))
 		$_SESSION["iblock.vote"] = array();
 	if(!array_key_exists($arResult["AJAX"]["SESSION_KEY"], $_SESSION["iblock.vote"]))
 	{
@@ -301,10 +346,9 @@ if(array_key_exists("AJAX", $arResult) && ($_REQUEST["AJAX_CALL"] != "Y"))
 	if(!defined("ADMIN_SECTION") || (ADMIN_SECTION !== true))
 	{
 		//14*
-		//ÐŸÐ¾Ð´ÐºÐ»ÑŽÑ‡Ð°ÐµÐ¼ Ð¿Ð¾Ð´Ð´ÐµÑ€Ð¶ÐºÑƒ (Ð±Ð¸Ð±Ð»Ð¸Ð¾Ñ‚ÐµÐºÑƒ)
+		//Ïîäêëþ÷àåì ïîääåðæêó (áèáëèîòåêó)
 		IncludeAJAX();
 	}
 	//15*
-	//ÐŸÑ€Ð¾Ð´Ð¾Ð»Ð¶ÐµÐ½Ð¸Ðµ ÑÐºÑÐºÑƒÑ€ÑÐ¸Ð¸ Ð² Ñ„Ð°Ð¹Ð»Ðµ jscript.php
+	//Ïðîäîëæåíèå ýêñêóðñèè â ôàéëå jscript.php
 }
-?>

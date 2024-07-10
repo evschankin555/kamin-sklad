@@ -138,7 +138,7 @@ else
 		foreach($_SESSION['CURRENT_LOCATION']['LOCATIONS'] as $key => $arLocation){
 			if ($key=='DEFAULT') {continue;}
 
-			if (in_array($_SERVER['REMOTE_ADDR'],$arLocation['IPS'])){
+			if (is_array($arLocation['IPS']) && in_array($_SERVER['REMOTE_ADDR'],$arLocation['IPS'])){
 					$_SESSION['CURRENT_LOCATION']['CURRENT_IP']=$arLocation;
 					$isset=true;
 			}

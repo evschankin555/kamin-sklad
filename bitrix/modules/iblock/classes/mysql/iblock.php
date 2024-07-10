@@ -1,4 +1,9 @@
-<?
+<?php
+
+use Bitrix\Main\Application;
+use Bitrix\Main\DB\MysqlCommonConnection;
+use Bitrix\Main\ORM\Fields;
+
 class CIBlock extends CAllIBlock
 {
 	///////////////////////////////////////////////////////////////////
@@ -13,7 +18,7 @@ class CIBlock extends CAllIBlock
 		foreach($arFilter as $key => $val)
 		{
 			$res = CIBlock::MkOperationFilter($key);
-			$key = strtoupper($res["FIELD"]);
+			$key = mb_strtoupper($res["FIELD"]);
 			$cOperationType = $res["OPERATION"];
 
 			switch($key)
@@ -24,8 +29,10 @@ class CIBlock extends CAllIBlock
 			case "LID":
 			case "SITE_ID":
 				$sql = CIBlock::FilterCreate("BS.SITE_ID", $val, "string_equal", $cOperationType);
-				if(strlen($sql))
+				if($sql <> '')
+				{
 					$bAddSites = true;
+				}
 				break;
 			case "NAME":
 			case "CODE":
@@ -49,8 +56,10 @@ class CIBlock extends CAllIBlock
 				break;
 			}
 
-			if(strlen($sql))
+			if($sql <> '')
+			{
 				$strSqlSearch .= " AND  (".$sql.") ";
+			}
 		}
 
 		$bCheckPermissions =
@@ -68,7 +77,11 @@ class CIBlock extends CAllIBlock
 		}
 		if($bCheckPermissions && ($permissionsBy !== null || !$bIsAdmin))
 		{
-			$min_permission = (strlen($arFilter["MIN_PERMISSION"])==1) ? $arFilter["MIN_PERMISSION"] : "R";
+			$min_permission =
+				isset($arFilter['MIN_PERMISSION']) && strlen($arFilter['MIN_PERMISSION']) === 1
+					? $arFilter['MIN_PERMISSION']
+					: \CIBlockRights::PUBLIC_READ
+			;
 
 			if ($permissionsBy !== null)
 			{
@@ -103,16 +116,26 @@ class CIBlock extends CAllIBlock
 					AND (IBG.PERMISSION='X' OR B.ACTIVE='Y')
 				";
 
-			if (strlen($arFilter["OPERATION"]) > 0)
+			if (!empty($arFilter["OPERATION"]))
+			{
 				$operation  = "'".$DB->ForSql($arFilter["OPERATION"])."'";
+			}
 			elseif($min_permission >= "X")
+			{
 				$operation = "'iblock_edit'";
+			}
 			elseif($min_permission >= "U")
+			{
 				$operation = "'element_edit'";
+			}
 			elseif($min_permission >= "S")
+			{
 				$operation = "'iblock_admin_display'";
+			}
 			else
+			{
 				$operation = "'section_read', 'element_read', 'section_element_bind', 'section_section_bind'";
+			}
 
 			if($operation)
 			{
@@ -185,9 +208,9 @@ class CIBlock extends CAllIBlock
 					LEFT JOIN b_iblock_element BE ON (BE.IBLOCK_ID=B.ID
 						AND (
 							(BE.WF_STATUS_ID=1 AND BE.WF_PARENT_ELEMENT_ID IS NULL )
-							".($arFilter["CNT_ALL"]=="Y"? " OR BE.WF_NEW='Y' ":"")."
+							".(($arFilter["CNT_ALL"] ?? 'N') === "Y"? " OR BE.WF_NEW='Y' ":"")."
 						)
-						".($arFilter["CNT_ACTIVE"]=="Y"?
+						".(($arFilter["CNT_ACTIVE"] ?? 'N') === "Y" ?
 						"AND BE.ACTIVE='Y'
 						AND (BE.ACTIVE_TO >= ".$DB->CurrentDateFunction()." OR BE.ACTIVE_TO IS NULL)
 						AND (BE.ACTIVE_FROM <= ".$DB->CurrentDateFunction()." OR BE.ACTIVE_FROM IS NULL)
@@ -206,8 +229,8 @@ class CIBlock extends CAllIBlock
 		{
 			foreach($arOrder as $by=>$order)
 			{
-				$by = strtolower($by);
-				$order = strtolower($order);
+				$by = mb_strtolower($by);
+				$order = mb_strtolower($order);
 				if ($order!="asc")
 					$order = "desc";
 
@@ -227,13 +250,16 @@ class CIBlock extends CAllIBlock
 			}
 		}
 
-		if(count($arSqlOrder) > 0)
-			$strSqlOrder = " ORDER BY ".implode(",", $arSqlOrder);
+		if (!empty($arSqlOrder))
+		{
+			$strSqlOrder = " ORDER BY " . implode(",", $arSqlOrder);
+		}
 		else
+		{
 			$strSqlOrder = "";
+		}
 
-		$res = $DB->Query($strSql.$strSqlOrder, false, "FILE: ".__FILE__."<br> LINE: ".__LINE__);
-		return $res;
+		return $DB->Query($strSql.$strSqlOrder, false, "FILE: ".__FILE__."<br> LINE: ".__LINE__);
 	}
 
 	public static function _Upper($str)
@@ -241,41 +267,129 @@ class CIBlock extends CAllIBlock
 		return $str;
 	}
 
-	function _Add($ID)
+	public function _Add($ID)
 	{
 		global $DB;
-		$err_mess = "FILE: ".__FILE__."<br>LINE: ";
-		$ID = intval($ID);
+		$err_mess = 'FILE: ' . __FILE__ . '<br>LINE: ';
+		$ID = (int)$ID;
 
-		if(defined("MYSQL_TABLE_TYPE") && strlen(MYSQL_TABLE_TYPE) > 0)
+		$connection = Application::getConnection();
+
+		if (
+			$connection instanceof MysqlCommonConnection
+			&& defined('MYSQL_TABLE_TYPE')
+			&& MYSQL_TABLE_TYPE !== ''
+		)
 		{
-			$DB->Query("SET storage_engine = '".MYSQL_TABLE_TYPE."'", true);
+			//$DB->Query("SET storage_engine = '" . MYSQL_TABLE_TYPE . "'", true);
+			$connection->query('SET storage_engine = \'' . MYSQL_TABLE_TYPE . '\'');
 		}
-		$strSql = "
-			CREATE TABLE IF NOT EXISTS b_iblock_element_prop_s".$ID." (
-				IBLOCK_ELEMENT_ID 	int(11) not null REFERENCES b_iblock_element(ID),
+
+		$singleTableName = static::getSinglePropertyValuesTableName($ID);
+		$multiTableName = static::getMultiplePropertyValuesTableName($ID);
+
+		if (!$connection->isTableExists($singleTableName))
+		{
+			$fields = [
+				'IBLOCK_ELEMENT_ID' => (new Fields\IntegerField('IBLOCK_ELEMENT_ID'))
+					->configurePrimary()
+				,
+			];
+			$connection->createTable($singleTableName, $fields, ['IBLOCK_ELEMENT_ID']);
+			if (!$connection->isTableExists($singleTableName))
+			{
+				return false;
+			}
+		}
+
+		if (!$connection->isTableExists($multiTableName))
+		{
+			$fields = [
+				'ID' => (new Fields\IntegerField('ID'))
+					->configurePrimary()
+					->configureAutocomplete()
+				,
+				'IBLOCK_ELEMENT_ID' => (new Fields\IntegerField('IBLOCK_ELEMENT_ID')),
+				'IBLOCK_PROPERTY_ID' => (new Fields\IntegerField('IBLOCK_PROPERTY_ID')),
+				'VALUE' => (new Fields\TextField('VALUE')),
+				'VALUE_ENUM' => (new Fields\IntegerField('VALUE_ENUM'))
+					->configureNullable()
+				,
+				'VALUE_NUM' => (new Fields\DecimalField('VALUE_NUM'))
+					->configureNullable()
+					->configurePrecision(18)
+					->configureScale(4)
+				,
+				'DESCRIPTION' => (new Fields\StringField('DESCRIPTION'))
+					->configureSize(255)
+					->configureNullable()
+				,
+			];
+			$connection->createTable($multiTableName, $fields, ['ID'], ['ID']);
+			if (!$connection->isTableExists($multiTableName))
+			{
+				return false;
+			}
+			else
+			{
+				$connection->createIndex(
+					$multiTableName,
+					'ix_iblock_elem_prop_m' . $ID . '_1',
+					[
+						'IBLOCK_ELEMENT_ID',
+						'IBLOCK_PROPERTY_ID',
+					]
+				);
+				$connection->createIndex(
+					$multiTableName,
+					'ix_iblock_elem_prop_m' . $ID . '_2',
+					[
+						'IBLOCK_PROPERTY_ID',
+					]
+				);
+				$connection->createIndex(
+					$multiTableName,
+					'ix_iblock_elem_prop_m' . $ID . '_3',
+					[
+						'VALUE_ENUM',
+						'IBLOCK_PROPERTY_ID',
+					]
+				);
+			}
+		}
+
+		return true;
+
+		/*
+		$strSql = '
+			CREATE TABLE IF NOT EXISTS b_iblock_element_prop_s' . $ID . ' (
+				IBLOCK_ELEMENT_ID int(11) not null,
 				primary key (IBLOCK_ELEMENT_ID)
 			)
-		";
+		';
 		$rs = $DB->DDL($strSql, false, $err_mess.__LINE__);
-		$strSql = "
-			CREATE TABLE IF NOT EXISTS b_iblock_element_prop_m".$ID." (
-				ID			int(11) not null auto_increment,
-				IBLOCK_ELEMENT_ID 	int(11) not null REFERENCES b_iblock_element(ID),
-				IBLOCK_PROPERTY_ID	int(11) not null REFERENCES b_iblock_property(ID),
-				VALUE			text	not null,
-				VALUE_ENUM 		int(11),
-				VALUE_NUM 		numeric(18,4),
-				DESCRIPTION 		VARCHAR(255) NULL,
+		$strSql = '
+			CREATE TABLE IF NOT EXISTS b_iblock_element_prop_m' . $ID . ' (
+				ID int(11) not null auto_increment,
+				IBLOCK_ELEMENT_ID int(11) not null,
+				IBLOCK_PROPERTY_ID int(11) not null,
+				VALUE text not null,
+				VALUE_ENUM int(11),
+				VALUE_NUM numeric(18,4),
+				DESCRIPTION VARCHAR(255) NULL,
 				PRIMARY KEY (ID),
-				INDEX ix_iblock_elem_prop_m".$ID."_1(IBLOCK_ELEMENT_ID,IBLOCK_PROPERTY_ID),
-				INDEX ix_iblock_elem_prop_m".$ID."_2(IBLOCK_PROPERTY_ID),
-				INDEX ix_iblock_elem_prop_m".$ID."_3(VALUE_ENUM,IBLOCK_PROPERTY_ID)
+				INDEX ix_iblock_elem_prop_m' . $ID . '_1(IBLOCK_ELEMENT_ID,IBLOCK_PROPERTY_ID),
+				INDEX ix_iblock_elem_prop_m' . $ID . '_2(IBLOCK_PROPERTY_ID),
+				INDEX ix_iblock_elem_prop_m' . $ID . '_3(VALUE_ENUM,IBLOCK_PROPERTY_ID)
 			)
-		";
-		if($rs)
-			$rs = $DB->DDL($strSql, false, $err_mess.__LINE__);
+		';
+		if ($rs)
+		{
+			$rs = $DB->DDL($strSql, false, $err_mess . __LINE__);
+		}
+
 		return $rs;
+		*/
 	}
 
 	public static function _Order($by, $order, $default_order, $nullable = true)
@@ -309,6 +423,6 @@ class CIBlock extends CAllIBlock
 
 	public static function _NotEmpty($column)
 	{
-		return "if(".$column." is null, 0, 1)";
+		return 'case when ' . $column . ' is null then 0 else 1 end';
 	}
 }

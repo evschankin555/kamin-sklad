@@ -21,7 +21,19 @@ $frame->setBrowserStorage(true);
 		<?
 		global $USER;
 		$arPhoto=array();
-		$arUser=COptimusCache::CUser_GetList(array("SORT"=>"ASC", "CACHE" => array("MULTI" => "N", "TAG"=>COptimusCache::GetUserCacheTag($USER->GetID()))), array("ID"=>$USER->GetID()), array("FIELDS"=>array("ID", "PERSONAL_PHOTO")));
+        $cache = new COptimusCache(); // Создаем объект класса COptimusCache
+
+        // Вызываем метод GetUserCacheTag() на объекте $cache
+        $userCacheTag = $cache->GetUserCacheTag($USER->GetID());
+
+        // Пример вызова метода CUser_GetList() на объекте $cache
+        $arUser = $cache->CUser_GetList(
+            array("SORT"=>"ASC", "CACHE" => array("MULTI" => "N", "TAG"=>$userCacheTag)),
+            array("ID"=>$USER->GetID()),
+            array("FIELDS"=>array("ID", "PERSONAL_PHOTO"))
+        );
+
+
 		if($arUser["PERSONAL_PHOTO"]){
 			$arPhoto=CFile::ResizeImageGet($arUser["PERSONAL_PHOTO"], array("width"=>21, "height"=>21), BX_RESIZE_IMAGE_EXACT, true);
 		}

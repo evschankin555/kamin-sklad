@@ -1,6 +1,7 @@
 <?if(!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED !== true) die();
 $strReturn = '';
 if($arResult){
+    $optimusInstance = new COptimus();
 	CModule::IncludeModule("iblock");
 	global $OptimusSectionID;
 	$cnt = count($arResult);
@@ -13,7 +14,7 @@ if($arResult){
 		$title = htmlspecialcharsex($arItem["TITLE"]);
 		$bLast = $index == $lastindex;
 		if($OptimusSectionID && $bShowCatalogSubsections){
-			$arSubSections = COptimus::getChainNeighbors($OptimusSectionID, $arItem['LINK']);
+			$arSubSections = $optimusInstance->getChainNeighbors($OptimusSectionID, $arItem['LINK']);
 		}
 		if($index){
 			$strReturn .= '<span class="separator">-</span>';

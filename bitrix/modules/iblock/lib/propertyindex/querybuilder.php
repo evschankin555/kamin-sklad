@@ -6,6 +6,8 @@
  */
 namespace Bitrix\Iblock\PropertyIndex;
 
+use Bitrix\Iblock\PropertyTable;
+
 class QueryBuilder
 {
 	/** @var \Bitrix\Iblock\PropertyIndex\Facet */
@@ -19,6 +21,7 @@ class QueryBuilder
 	protected $priceFilter = null;
 	protected $distinct = false;
 	protected $options = array();
+	private array $propertyFilter;
 
 	/**
 	 * @param integer $iblockId Information block identifier.
@@ -63,7 +66,9 @@ class QueryBuilder
 		if (array_key_exists("FACET_OPTIONS", $filter))
 		{
 			if (is_array($filter["FACET_OPTIONS"]))
+			{
 				$this->options = $filter["FACET_OPTIONS"];
+			}
 			unset($filter["FACET_OPTIONS"]);
 		}
 
@@ -71,9 +76,9 @@ class QueryBuilder
 		$fcJoin = "";
 		$toUnset = array();
 		if (
-			!is_array($filter["IBLOCK_ID"]) && $filter["IBLOCK_ID"] > 0
+			isset($filter["IBLOCK_ID"]) && !is_array($filter["IBLOCK_ID"]) && $filter["IBLOCK_ID"] > 0
 			&& (
-				(!is_array($filter["SECTION_ID"]) && $filter["SECTION_ID"] > 0)
+				(isset($filter["SECTION_ID"]) && !is_array($filter["SECTION_ID"]) && $filter["SECTION_ID"] > 0)
 				|| ($this->options && !isset($filter["SECTION_ID"]))
 			)
 			&& isset($filter["ACTIVE"]) && $filter["ACTIVE"] === "Y"
@@ -82,7 +87,7 @@ class QueryBuilder
 			$where = array();
 			$toUnset[] = array(&$filter, "SECTION_ID");
 
-			if ($filter["INCLUDE_SUBSECTIONS"] === "Y")
+			if (isset($filter["INCLUDE_SUBSECTIONS"]) && $filter["INCLUDE_SUBSECTIONS"] === "Y")
 			{
 				$subsectionsCondition = "";
 				$toUnset[] = array(&$filter, "INCLUDE_SUBSECTIONS");
@@ -127,8 +132,13 @@ class QueryBuilder
 				$this->facet->setSectionId($filter["SECTION_ID"]);
 				if ($this->options)
 				{
-					if ($this->options["CURRENCY_CONVERSION"])
-						$this->facet->enableCurrencyConversion($this->options["CURRENCY_CONVERSION"]["TO"], $this->options["CURRENCY_CONVERSION"]["FROM"]);
+					if (isset($this->options["CURRENCY_CONVERSION"]) && $this->options["CURRENCY_CONVERSION"])
+					{
+						$this->facet->enableCurrencyConversion(
+							$this->options["CURRENCY_CONVERSION"]["TO"] ?? '',
+							$this->options["CURRENCY_CONVERSION"]["FROM"] ?? ''
+						);
+					}
 				}
 				$distinctSelectCapable = (\Bitrix\Main\Application::getConnection()->getType() == "mysql");
 				if (count($where) == 1 && $distinctSelectCapable)
@@ -223,13 +233,33 @@ class QueryBuilder
 	 */
 	private function fillWhere(&$where, &$hasAdditionalFilters, &$toUnset, &$filter)
 	{
-		$properties = $this->getFilterProperty();
+		$countUnset = count($toUnset);
+		$properties = null;
+		$propertyCodeMap = null;
+
+		$usePriceFilter = isset($this->options['PRICE_FILTER']) && $this->options['PRICE_FILTER'];
+
 		foreach ($filter as $filterKey => $filterValue)
 		{
 			if (preg_match("/^(=)PROPERTY\$/i", $filterKey, $keyDetails) && is_array($filterValue))
 			{
+				if ($properties === null)
+					$properties = $this->getFilterProperty();
+				if ($propertyCodeMap === null)
+				{
+					$propertyCodeMap = $this->getPropertyCodeMap();
+				}
+
 				foreach ($filterValue as $propertyId => $value)
 				{
+					$propertyId = $propertyCodeMap[$propertyId] ?? null;
+					if (
+						$propertyId === null
+						|| !isset($properties[$propertyId])
+					)
+					{
+						continue;
+					}
 					$facetId = $this->storage->propertyIdToFacetId($propertyId);
 					if ($properties[$propertyId] == Storage::DICTIONARY || $properties[$propertyId] == Storage::STRING)
 					{
@@ -249,7 +279,21 @@ class QueryBuilder
 			}
 			elseif (preg_match("/^(=)PROPERTY_(\\d+)\$/i", $filterKey, $keyDetails))
 			{
-				$propertyId = $keyDetails[2];
+				if ($properties === null)
+					$properties = $this->getFilterProperty();
+				if ($propertyCodeMap === null)
+				{
+					$propertyCodeMap = $this->getPropertyCodeMap();
+				}
+
+				$propertyId = $propertyCodeMap[$keyDetails[2]] ?? null;
+				if (
+					$propertyId === null
+					|| !isset($properties[$propertyId])
+				)
+				{
+					continue;
+				}
 				$value = $filterValue;
 				$facetId = $this->storage->propertyIdToFacetId($propertyId);
 				if ($properties[$propertyId] == Storage::DICTIONARY || $properties[$propertyId] == Storage::STRING)
@@ -269,8 +313,23 @@ class QueryBuilder
 			}
 			elseif (preg_match("/^(>=|<=)PROPERTY\$/i", $filterKey, $keyDetails) && is_array($filterValue))
 			{
+				if ($properties === null)
+					$properties = $this->getFilterProperty();
+				if ($propertyCodeMap === null)
+				{
+					$propertyCodeMap = $this->getPropertyCodeMap();
+				}
+
 				foreach ($filterValue as $propertyId => $value)
 				{
+					$propertyId = $propertyCodeMap[$propertyId] ?? null;
+					if (
+						$propertyId === null
+						|| !isset($properties[$propertyId])
+					)
+					{
+						continue;
+					}
 					$facetId = $this->storage->propertyIdToFacetId($propertyId);
 					if ($properties[$propertyId] == Storage::NUMERIC)
 					{
@@ -304,8 +363,23 @@ class QueryBuilder
 			}
 			elseif (preg_match("/^(><)PROPERTY\$/i", $filterKey, $keyDetails) && is_array($filterValue))
 			{
+				if ($properties === null)
+					$properties = $this->getFilterProperty();
+				if ($propertyCodeMap === null)
+				{
+					$propertyCodeMap = $this->getPropertyCodeMap();
+				}
+
 				foreach ($filterValue as $propertyId => $value)
 				{
+					$propertyId = $propertyCodeMap[$propertyId] ?? null;
+					if (
+						$propertyId === null
+						|| !isset($properties[$propertyId])
+					)
+					{
+						continue;
+					}
 					$facetId = $this->storage->propertyIdToFacetId($propertyId);
 					if ($properties[$propertyId] == Storage::NUMERIC)
 					{
@@ -340,8 +414,8 @@ class QueryBuilder
 				}
 			}
 			elseif (
-				$this->options["PRICE_FILTER"]
-				&& preg_match("/^(>=|<=)CATALOG_PRICE_(\\d+)\$/i", $filterKey, $keyDetails)
+				$usePriceFilter
+				&& preg_match("/^(>=|<=)(?:CATALOG_|)PRICE_(\\d+)\$/i", $filterKey, $keyDetails)
 				&& !is_array($filterValue)
 			)
 			{
@@ -358,8 +432,8 @@ class QueryBuilder
 				$toUnset[] = array(&$filter, $filterKey);
 			}
 			elseif (
-				$this->options["PRICE_FILTER"]
-				&& preg_match("/^(><)CATALOG_PRICE_(\\d+)\$/i", $filterKey, $keyDetails)
+				$usePriceFilter
+				&& preg_match("/^(><)(?:CATALOG_|)PRICE_(\\d+)\$/i", $filterKey, $keyDetails)
 				&& is_array($filterValue)
 			)
 			{
@@ -377,12 +451,12 @@ class QueryBuilder
 				$toUnset[] = array(&$filter, $filterKey);
 			}
 			elseif (
-				$this->options["PRICE_FILTER"]
+				$usePriceFilter
 				&& is_numeric($filterKey)
 				&& is_array($filterValue) && count($filterValue) === 3
 				&& isset($filterValue["LOGIC"]) && $filterValue["LOGIC"] === "OR"
 				&& isset($filterValue["=ID"]) && is_object($filterValue["=ID"])
-				&& preg_match("/^(>=|<=)CATALOG_PRICE_(\\d+)\$/i", key($filterValue[0][0]), $keyDetails)
+				&& preg_match("/^(>=|<=)(?:CATALOG_|)PRICE_(\\d+)\$/i", key($filterValue[0][0]), $keyDetails)
 				&& !is_array(current($filterValue[0][0]))
 			)
 			{
@@ -397,15 +471,15 @@ class QueryBuilder
 					"VALUES" => array($doubleValue),
 				);
 				$toUnset[] = array(&$filter, $filterKey);
-				$toUnset[] = array(&$filter, "CATALOG_SHOP_QUANTITY_1");
+				$toUnset[] = array(&$filter, "CATALOG_SHOP_QUANTITY_".$priceId);
 			}
 			elseif (
-				$this->options["PRICE_FILTER"]
+				$usePriceFilter
 				&& is_numeric($filterKey)
 				&& is_array($filterValue) && count($filterValue) === 3
 				&& isset($filterValue["LOGIC"]) && $filterValue["LOGIC"] === "OR"
 				&& isset($filterValue["=ID"]) && is_object($filterValue["=ID"])
-				&& preg_match("/^(><)CATALOG_PRICE_(\\d+)\$/i", key($filterValue[0][0]), $keyDetails)
+				&& preg_match("/^(><)(?:CATALOG_|)PRICE_(\\d+)\$/i", key($filterValue[0][0]), $keyDetails)
 				&& is_array(current($filterValue[0][0]))
 			)
 			{
@@ -421,7 +495,7 @@ class QueryBuilder
 					"VALUES" => array($doubleValueMin, $doubleValueMax),
 				);
 				$toUnset[] = array(&$filter, $filterKey);
-				$toUnset[] = array(&$filter, "CATALOG_SHOP_QUANTITY_1");
+				$toUnset[] = array(&$filter, "CATALOG_SHOP_QUANTITY_".$priceId);
 			}
 			elseif (
 				$filterKey !== "IBLOCK_ID"
@@ -430,6 +504,13 @@ class QueryBuilder
 			)
 			{
 				$hasAdditionalFilters = true;
+			}
+		}
+		if ($hasAdditionalFilters)
+		{
+			while (count($toUnset) > $countUnset)
+			{
+				array_pop($toUnset);
 			}
 		}
 	}
@@ -450,7 +531,7 @@ class QueryBuilder
 		{
 			foreach ($value as $val)
 			{
-				if (strlen($val) > 0)
+				if ((string)$val <> '')
 				{
 					if ($lookup)
 					{
@@ -458,12 +539,12 @@ class QueryBuilder
 					}
 					else
 					{
-						$result[] = intval($val);
+						$result[] = (int)$val;
 					}
 				}
 			}
 		}
-		elseif (strlen($value) > 0)
+		elseif ((string)$value <> '')
 		{
 			if ($lookup)
 			{
@@ -471,7 +552,7 @@ class QueryBuilder
 			}
 			else
 			{
-				$result[] = intval($value);
+				$result[] = (int)$value;
 			}
 		}
 
@@ -485,30 +566,94 @@ class QueryBuilder
 	 *
 	 * @return integer[]
 	 */
-	private function getFilterProperty()
+	private function getFilterProperty(): array
 	{
+		//TODO: remove this code to \Bitrix\Iblock\Model\Property
 		if (!isset($this->propertyFilter))
 		{
-			$this->propertyFilter = array();
-			$propertyList = \Bitrix\Iblock\SectionPropertyTable::getList(array(
-				"select" => array("PROPERTY_ID", "PROPERTY.PROPERTY_TYPE", "PROPERTY.USER_TYPE"),
-				"filter" => array(
-					"=IBLOCK_ID" => array($this->facet->getIblockId(), $this->facet->getSkuIblockId()),
-					"=SMART_FILTER" => "Y",
-				),
-			));
+			$this->propertyFilter = [];
+			$propertyList = \Bitrix\Iblock\SectionPropertyTable::getList([
+				'select' => [
+					'PROPERTY_ID',
+					'PROPERTY_TYPE' => 'PROPERTY.PROPERTY_TYPE',
+					'USER_TYPE' => 'PROPERTY.USER_TYPE',
+				],
+				'filter' => [
+					'=IBLOCK_ID' => [
+						$this->facet->getIblockId(),
+						$this->facet->getSkuIblockId(),
+					],
+					'=SMART_FILTER' => 'Y',
+				],
+			]);
 			while ($link = $propertyList->fetch())
 			{
-				if ($link["IBLOCK_SECTION_PROPERTY_PROPERTY_PROPERTY_TYPE"] === "N")
-					$this->propertyFilter[$link["PROPERTY_ID"]] = Storage::NUMERIC;
-				elseif ($link["IBLOCK_SECTION_PROPERTY_PROPERTY_USER_TYPE"] === "DateTime")
-					$this->propertyFilter[$link["PROPERTY_ID"]] = Storage::DATETIME;
-				elseif ($link["IBLOCK_SECTION_PROPERTY_PROPERTY_PROPERTY_TYPE"] === "S")
-					$this->propertyFilter[$link["PROPERTY_ID"]] = Storage::STRING;
+				if ($link['PROPERTY_TYPE'] === PropertyTable::TYPE_NUMBER)
+				{
+					$this->propertyFilter[$link['PROPERTY_ID']] = Storage::NUMERIC;
+				}
+				elseif ($link['USER_TYPE'] === PropertyTable::USER_TYPE_DATETIME)
+				{
+					$this->propertyFilter[$link['PROPERTY_ID']] = Storage::DATETIME;
+				}
+				elseif ($link['PROPERTY_TYPE'] === PropertyTable::TYPE_STRING)
+				{
+					$this->propertyFilter[$link['PROPERTY_ID']] = Storage::STRING;
+				}
 				else
-					$this->propertyFilter[$link["PROPERTY_ID"]] = Storage::DICTIONARY;
+				{
+					$this->propertyFilter[$link['PROPERTY_ID']] = Storage::DICTIONARY;
+				}
 			}
 		}
+
 		return $this->propertyFilter;
+	}
+
+	private function getPropertyCodeMap(): array
+	{
+		$result = [];
+
+		$iterator = \Bitrix\Iblock\PropertyTable::getList([
+			'select' => [
+				'ID',
+				'CODE',
+			],
+			'filter' => [
+				'=IBLOCK_ID' => $this->facet->getIblockId(),
+			],
+		]);
+		while ($row = $iterator->fetch())
+		{
+			$id = (int)$row['ID'];
+			$result[$id] = $id;
+			$row['CODE'] = (string)$row['CODE'];
+			if ($row['CODE'] !== '')
+			{
+				$result[$row['CODE']] = $id;
+			}
+		}
+		unset($iterator);
+
+		$skuIblockId = $this->facet->getSkuIblockId();
+		if ($skuIblockId > 0)
+		{
+			$iterator = \Bitrix\Iblock\PropertyTable::getList([
+				'select' => [
+					'ID',
+				],
+				'filter' => [
+					'=IBLOCK_ID' => $skuIblockId,
+				],
+			]);
+			while ($row = $iterator->fetch())
+			{
+				$id = (int)$row['ID'];
+				$result[$id] = $id;
+			}
+			unset($iterator);
+		}
+
+		return $result;
 	}
 }

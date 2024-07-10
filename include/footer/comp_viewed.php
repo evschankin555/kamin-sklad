@@ -1,8 +1,10 @@
 <?if(!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) die();?>
 <?
 global $TEMPLATE_OPTIONS;
+$optimusInstance = new COptimus();
+
 $IsViewedTypeLocal = $TEMPLATE_OPTIONS['VIEWED_TYPE']['CURRENT_VALUE'] === 'LOCAL';
-$arViewedIDs=COptimus::getViewedProducts((int)CSaleBasket::GetBasketUserID(false), SITE_ID);
+$arViewedIDs=$optimusInstance->getViewedProducts((int)CSaleBasket::GetBasketUserID(false), SITE_ID);
 if($arViewedIDs){?>
 	<?Bitrix\Main\Page\Frame::getInstance()->startDynamicWithID("viewed-block");?>
 	<div class="wrapper_inner">

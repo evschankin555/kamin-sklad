@@ -6,14 +6,15 @@ class Image {
     public static function optimize ($content, $replace) {
         $imageUrls = [];
         $webpMinify = WebP::neadOptimize();
-        $lazyMinify = LazyLoad::neadOptimize();
+        $LazyLoad = new LazyLoad();
+        $lazyMinify = $LazyLoad->neadOptimize();
         if ($webpMinify || $lazyMinify) {
             $imageUrls = self::findInContent($content);
             if ($webpMinify) {
                 $imageUrls = WebP::optimize($imageUrls);
             }
             if ($lazyMinify) {
-                $imageUrls = LazyLoad::optimize($imageUrls);
+                $imageUrls = $LazyLoad->optimize($imageUrls);
             }
         }
         foreach ($imageUrls as $tag => $data) {

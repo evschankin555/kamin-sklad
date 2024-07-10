@@ -33,8 +33,8 @@ if (isset($templateData['BLOG_USE']) && $templateData['BLOG_USE'] == 'Y')
 			"SHOW_RATING" => $arParams["SHOW_RATING"],
 			"RATING_TYPE" => $arParams["RATING_TYPE"],
 			"PATH_TO_POST" => $arResult["URL_TO_COMMENT"],
-			"IBLOCK_ID" => $templateData['BLOG']['AJAX_PARAMS']['IBLOCK_ID'],
-			"ELEMENT_ID" => $templateData['BLOG']['AJAX_PARAMS']['ELEMENT_ID'],
+			"IBLOCK_ID" => $templateData['BLOG']['AJAX_PARAMS']['IBLOCK_ID'] ?? 0,
+			"ELEMENT_ID" => $templateData['BLOG']['AJAX_PARAMS']['ELEMENT_ID'] ?? 0,
 			"NO_URL_IN_COMMENTS" => "L",
 		);
 		if(isset($arParams["USER_CONSENT"]))
@@ -75,7 +75,7 @@ if (!$ajaxMode)
 {
 	if (isset($templateData['FB_USE']) && $templateData['FB_USE'] == "Y")
 	{
-		if (isset($arParams["FB_USER_ADMIN_ID"]) && strlen($arParams["FB_USER_ADMIN_ID"]) > 0)
+		if (isset($arParams["FB_USER_ADMIN_ID"]) && $arParams["FB_USER_ADMIN_ID"] <> '')
 		{
 			$APPLICATION->AddHeadString('<meta property="fb:admins" content="'.$arParams["FB_USER_ADMIN_ID"].'"/>');
 		}

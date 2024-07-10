@@ -51,62 +51,84 @@ if (!empty($arResult['CURRENCIES'])){
 	$templateLibrary[] = 'currency';
 	$currencyList = CUtil::PhpToJSObject($arResult['CURRENCIES'], false, true, true);
 }
+// Проверяем, является ли $arParams['STORES'] массивом, если нет, то преобразуем его в массив
+if (!is_array($arParams['STORES'])) {
+    $arParams['STORES'] = explode(',', $arParams['STORES']);
+}
+
+// Удаляем пустые элементы из массива $arParams['STORES']
+$arParams['STORES'] = array_diff($arParams['STORES'], array(''));
+
 $templateData = array(
-	'TEMPLATE_LIBRARY' => $templateLibrary,
-	'CURRENCIES' => $currencyList,
-	'STORES' => array(
-		"USE_STORE_PHONE" => $arParams["USE_STORE_PHONE"],
-		"SCHEDULE" => $arParams["SCHEDULE"],
-		"USE_MIN_AMOUNT" => $arParams["USE_MIN_AMOUNT"],
-		"MIN_AMOUNT" => $arParams["MIN_AMOUNT"],
-		"ELEMENT_ID" => $arResult["ID"],
-		"STORE_PATH"  =>  $arParams["STORE_PATH"],
-		"MAIN_TITLE"  =>  $arParams["MAIN_TITLE"],
-		"MAX_AMOUNT"=>$arParams["MAX_AMOUNT"],
-		"USE_ONLY_MAX_AMOUNT" => $arParams["USE_ONLY_MAX_AMOUNT"],
-		"SHOW_EMPTY_STORE" => $arParams['SHOW_EMPTY_STORE'],
-		"SHOW_GENERAL_STORE_INFORMATION" => $arParams['SHOW_GENERAL_STORE_INFORMATION'],
-		"USE_ONLY_MAX_AMOUNT" => $arParams["USE_ONLY_MAX_AMOUNT"],
-		"USER_FIELDS" => $arParams['USER_FIELDS'],
-		"FIELDS" => $arParams['FIELDS'],
-		"STORES" => $arParams['STORES'] = array_diff($arParams['STORES'], array('')),
-	)
+    'TEMPLATE_LIBRARY' => $templateLibrary,
+    'CURRENCIES' => $currencyList,
+    'STORES' => array(
+        "USE_STORE_PHONE" => $arParams["USE_STORE_PHONE"],
+        "SCHEDULE" => $arParams["SCHEDULE"],
+        "USE_MIN_AMOUNT" => $arParams["USE_MIN_AMOUNT"],
+        "MIN_AMOUNT" => $arParams["MIN_AMOUNT"],
+        "ELEMENT_ID" => $arResult["ID"],
+        "STORE_PATH"  =>  $arParams["STORE_PATH"],
+        "MAIN_TITLE"  =>  $arParams["MAIN_TITLE"],
+        "MAX_AMOUNT"=>$arParams["MAX_AMOUNT"],
+        "USE_ONLY_MAX_AMOUNT" => $arParams["USE_ONLY_MAX_AMOUNT"],
+        "SHOW_EMPTY_STORE" => $arParams['SHOW_EMPTY_STORE'],
+        "SHOW_GENERAL_STORE_INFORMATION" => $arParams['SHOW_GENERAL_STORE_INFORMATION'],
+        "USE_ONLY_MAX_AMOUNT" => $arParams["USE_ONLY_MAX_AMOUNT"],
+        "USER_FIELDS" => $arParams['USER_FIELDS'],
+        "FIELDS" => $arParams['FIELDS'],
+        "STORES" => $arParams['STORES'],
+    )
 );
+
 unset($currencyList, $templateLibrary);
 
+// Создаем объект класса COptimus
+$optimusInstance = new COptimus();
+
 $arSkuTemplate = array();
-if (!empty($arResult['SKU_PROPS'])){
-	$arSkuTemplate=COptimus::GetSKUPropsArray($arResult['SKU_PROPS'], $arResult["SKU_IBLOCK_ID"], "list", $arParams["OFFER_HIDE_NAME_PROPS"]);
+if (!empty($arResult['SKU_PROPS'])) {
+    // Вызываем метод через объект
+    $arSkuTemplate = $optimusInstance->GetSKUPropsArray($arResult['SKU_PROPS'], $arResult["SKU_IBLOCK_ID"], "list", $arParams["OFFER_HIDE_NAME_PROPS"]);
 }
+
 $strMainID = $this->GetEditAreaId($arResult['ID']);
-
 $strObName = 'ob'.preg_replace("/[^a-zA-Z0-9_]/", "x", $strMainID);
-
 $arResult["strMainID"] = $this->GetEditAreaId($arResult['ID']);
-$arItemIDs=COptimus::GetItemsIDs($arResult, "Y");
-$totalCount = COptimus::GetTotalCount($arResult);
-$arQuantityData = COptimus::GetQuantityArray($totalCount, $arItemIDs["ALL_ITEM_IDS"], "Y");
 
-$arParams["BASKET_ITEMS"]=($arParams["BASKET_ITEMS"] ? $arParams["BASKET_ITEMS"] : array());
+// Вызываем метод через объект
+$arItemIDs = $optimusInstance->GetItemsIDs($arResult, "Y");
+
+// Вызываем метод через объект
+$totalCount = $optimusInstance->GetTotalCount($arResult);
+
+// Вызываем метод через объект
+$arQuantityData = $optimusInstance->GetQuantityArray($totalCount, $arItemIDs["ALL_ITEM_IDS"], "Y");
+
+$arParams["BASKET_ITEMS"] = ($arParams["BASKET_ITEMS"] ? $arParams["BASKET_ITEMS"] : array());
 $useStores = $arParams["USE_STORE"] == "Y" && $arResult["STORES_COUNT"] && $arQuantityData["RIGHTS"]["SHOW_QUANTITY"];
-$showCustomOffer=(($arResult['OFFERS'] && $arParams["TYPE_SKU"] !="N") ? true : false);
-if($showCustomOffer){
-	$templateData['JS_OBJ'] = $strObName;
+$showCustomOffer = (($arResult['OFFERS'] && $arParams["TYPE_SKU"] != "N") ? true : false);
+
+if ($showCustomOffer) {
+    $templateData['JS_OBJ'] = $strObName;
 }
-$strMeasure='';
-if($arResult["OFFERS"]){
-	$strMeasure=$arResult["MIN_PRICE"]["CATALOG_MEASURE_NAME"];
-	$templateData["STORES"]["OFFERS"]="Y";
-	foreach($arResult["OFFERS"] as $arOffer){
-		$templateData["STORES"]["OFFERS_ID"][]=$arOffer["ID"];
-	}
-}else{
-	if (($arParams["SHOW_MEASURE"]=="Y")&&($arResult["CATALOG_MEASURE"])){
-		$arMeasure = CCatalogMeasure::getList(array(), array("ID"=>$arResult["CATALOG_MEASURE"]), false, false, array())->GetNext();
-		$strMeasure=$arMeasure["SYMBOL_RUS"];
-	}
-	$arAddToBasketData = COptimus::GetAddToBasketArray($arResult, $totalCount, $arParams["DEFAULT_COUNT"], $arParams["BASKET_URL"], false, $arItemIDs["ALL_ITEM_IDS"], 'big_btn w_icons', $arParams);
+
+$strMeasure = '';
+if ($arResult["OFFERS"]) {
+    $strMeasure = $arResult["MIN_PRICE"]["CATALOG_MEASURE_NAME"];
+    $templateData["STORES"]["OFFERS"] = "Y";
+    foreach ($arResult["OFFERS"] as $arOffer) {
+        $templateData["STORES"]["OFFERS_ID"][] = $arOffer["ID"];
+    }
+} else {
+    if (($arParams["SHOW_MEASURE"] == "Y") && ($arResult["CATALOG_MEASURE"])) {
+        $arMeasure = CCatalogMeasure::getList(array(), array("ID" => $arResult["CATALOG_MEASURE"]), false, false, array())->GetNext();
+        $strMeasure = $arMeasure["SYMBOL_RUS"];
+    }
+    // Вызываем метод через объект
+    $arAddToBasketData = $optimusInstance->GetAddToBasketArray($arResult, $totalCount, $arParams["DEFAULT_COUNT"], $arParams["BASKET_URL"], false, $arItemIDs["ALL_ITEM_IDS"], 'big_btn w_icons', $arParams);
 }
+
 $arOfferProps = implode(';', $arParams['OFFERS_CART_PROPERTIES']);
 
 // save item viewed
@@ -405,7 +427,7 @@ setViewedProduct(<?=$arResult['ID']?>, <?=CUtil::PhpToJSObject($arViewedData, fa
                                         }?>
                                     </div>
                                 <?}?>
-                                <?$arItemJSParams=COptimus::GetSKUJSParams($arResult, $arParams, $arResult, "Y");?>
+                                <?$arItemJSParams=$optimusInstance->GetSKUJSParams($arResult, $arParams, $arResult, "Y");?>
                                 <script type="text/javascript">
                                     var <? echo $arItemIDs["strObName"]; ?> = new JCCatalogElement(<? echo CUtil::PhpToJSObject($arItemJSParams, false, true); ?>);
                                 </script>
@@ -465,7 +487,14 @@ setViewedProduct(<?=$arResult['ID']?>, <?=CUtil::PhpToJSObject($arViewedData, fa
 
 								<?//if($arParams["SHOW_DISCOUNT_PERCENT"]=="Y"){?>
 									<div class="sale_block" <?=(!$minPrice["DISCOUNT_DIFF"] ? 'style="display:none;"' : '')?>>
-										<?$percent=round(($minPrice["DISCOUNT_DIFF"]/$minPrice["VALUE"])*100, 2);?>
+                                        <?php
+                                        if ($minPrice["VALUE"] != 0) {
+                                            $percent = round(($minPrice["DISCOUNT_DIFF"] / $minPrice["VALUE"]) * 100, 2);
+                                        } else {
+                                            // Обработка случая, когда $minPrice["VALUE"] равно нулю
+                                            $percent = 0; // Или любое другое значение по вашему усмотрению
+                                        }
+                                        ?>
 										<div class="value">-<?=$percent;?>%</div>
 										<div class="text"><?=GetMessage("CATALOG_ECONOMY");?> <span><?=$minPrice["PRINT_DISCOUNT_DIFF"];?></span></div>
 										<div class="clearfix"></div>
@@ -966,11 +995,11 @@ foreach($arResult["VIDEOS"] as $v)
 								else{
 									$sMeasure = GetMessage("MEASURE_DEFAULT").".";
 								}
-								$skutotalCount = COptimus::CheckTypeCount($arSKU["CATALOG_QUANTITY"]);
-								$arskuQuantityData = COptimus::GetQuantityArray($skutotalCount, array('quantity-wrapp', 'quantity-indicators'));
+								$skutotalCount = $optimusInstance->CheckTypeCount($arSKU["CATALOG_QUANTITY"]);
+								$arskuQuantityData = $optimusInstance->GetQuantityArray($skutotalCount, array('quantity-wrapp', 'quantity-indicators'));
 								$arSKU["IBLOCK_ID"]=$arResult["IBLOCK_ID"];
 								$arSKU["IS_OFFER"]="Y";
-								$arskuAddToBasketData = COptimus::GetAddToBasketArray($arSKU, $skutotalCount, $arParams["DEFAULT_COUNT"], $arParams["BASKET_URL"], false, array(), 'small w_icons', $arParams);
+								$arskuAddToBasketData = $optimusInstance->GetAddToBasketArray($arSKU, $skutotalCount, $arParams["DEFAULT_COUNT"], $arParams["BASKET_URL"], false, array(), 'small w_icons', $arParams);
 								$arskuAddToBasketData["HTML"] = str_replace('data-item', 'data-props="'.$arOfferProps.'" data-item', $arskuAddToBasketData["HTML"]);
 								?>
 								<?$collspan = 1;?>
@@ -1325,7 +1354,7 @@ foreach($arResult["VIDEOS"] as $v)
 							<?
 							$i=1;
 							foreach($arFiles as $arItem):?>
-								<?$arFile=COptimus::GetFileInfo($arItem);?>
+								<?$arFile=$optimusInstance->GetFileInfo($arItem);?>
 								<div class="file_type clearfix <?=$arFile["TYPE"];?>">
 									<i class="icon"></i>
 									<div class="description">
@@ -1384,7 +1413,7 @@ foreach($arResult["VIDEOS"] as $v)
 										</td>
 										<td class="char_value">
 											<span itemprop="value">
-												<?if(count($arProp["DISPLAY_VALUE"]) > 1):?>
+                                                <?php if (is_array($arProp["DISPLAY_VALUE"]) && count($arProp["DISPLAY_VALUE"]) > 1): ?>
 													<?=implode(', ', $arProp["DISPLAY_VALUE"]);?>
 												<?else:?>
 													<?=$arProp["DISPLAY_VALUE"];?>

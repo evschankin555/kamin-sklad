@@ -9,6 +9,7 @@ use Bitrix\Main\Error;
 use Bitrix\Main\Type\Collection;
 use Bitrix\Main\Type\DateTime;
 use Bitrix\Main\Localization\Loc;
+use Bitrix\Sale\Internals\FacebookConversion;
 
 /**
  * @global \CUser $USER
@@ -21,23 +22,31 @@ abstract class Element extends Base
 {
 	public function onPrepareComponentParams($params)
 	{
+		if (!is_array($params))
+		{
+			$params = [];
+		}
 		$params['ADD_SECTIONS_CHAIN'] = (isset($params['ADD_SECTIONS_CHAIN']) && $params['ADD_SECTIONS_CHAIN'] === 'N' ? 'N' : 'Y');
 		$params['PRODUCT_DISPLAY_MODE'] = 'Y';
 		$params = parent::onPrepareComponentParams($params);
-		$params['IBLOCK_TYPE'] = isset($params['IBLOCK_TYPE']) ? trim($params['IBLOCK_TYPE']) : '';
+		$params['IBLOCK_TYPE'] = trim((string)($params['IBLOCK_TYPE'] ?? ''));
 
 		if ((int)$params['ELEMENT_ID'] > 0 && (int)$params['ELEMENT_ID'] != $params['ELEMENT_ID'] && Loader::includeModule('iblock'))
 		{
 			$this->errorCollection->setError(new Error(Loc::getMessage('CATALOG_ELEMENT_NOT_FOUND'), self::ERROR_404));
+
 			return $params;
 		}
 
 		$params['ELEMENT_ID'] = (int)$params['ELEMENT_ID'];
-		$params['ELEMENT_CODE'] = isset($params['ELEMENT_CODE']) ? trim($params['ELEMENT_CODE']) : '';
+		$params['ELEMENT_CODE'] = trim((string)($params['ELEMENT_CODE'] ?? ''));
 
 		$params['CHECK_SECTION_ID_VARIABLE'] = isset($params['CHECK_SECTION_ID_VARIABLE']) && $params['CHECK_SECTION_ID_VARIABLE'] === 'Y' ? 'Y' : 'N';
-		$params['SECTION_ID_VARIABLE'] = isset($params['SECTION_ID_VARIABLE']) ? trim($params['SECTION_ID_VARIABLE']) : '';
-		if ($params['SECTION_ID_VARIABLE'] == '' || !preg_match(self::PARAM_TITLE_MASK, $params['SECTION_ID_VARIABLE']))
+		$params['SECTION_ID_VARIABLE'] = trim((string)($params['SECTION_ID_VARIABLE'] ?? ''));
+		if (
+			$params['SECTION_ID_VARIABLE'] === ''
+			|| !preg_match(self::PARAM_TITLE_MASK, $params['SECTION_ID_VARIABLE'])
+		)
 		{
 			$params['SECTION_ID_VARIABLE'] = 'SECTION_ID';
 		}
@@ -48,23 +57,27 @@ abstract class Element extends Base
 			$params['FROM_SECTION'] = trim($this->request->get($params['SECTION_ID_VARIABLE']));
 		}
 
-		$params['META_KEYWORDS'] = trim($params['META_KEYWORDS']);
-		$params['META_DESCRIPTION'] = trim($params['META_DESCRIPTION']);
-		$params['BROWSER_TITLE'] = trim($params['BROWSER_TITLE']);
+		$params['SECTIONS_CHAIN_START_FROM'] = (int)($params['SECTIONS_CHAIN_START_FROM'] ?? 0);
+		$params['META_KEYWORDS'] = trim((string)($params['META_KEYWORDS'] ?? ''));
+		$params['META_DESCRIPTION'] = trim((string)($params['META_DESCRIPTION'] ?? ''));
+		$params['BROWSER_TITLE'] = trim((string)($params['BROWSER_TITLE'] ?? ''));
 
-		$params['BACKGROUND_IMAGE'] = isset($params['BACKGROUND_IMAGE']) ? trim($params['BACKGROUND_IMAGE']) : '';
+		$params['BACKGROUND_IMAGE'] = trim((string)($params['BACKGROUND_IMAGE'] ?? ''));
 		if ($params['BACKGROUND_IMAGE'] === '-')
 		{
 			$params['BACKGROUND_IMAGE'] = '';
 		}
 
 		$params['USE_MAIN_ELEMENT_SECTION'] = isset($params['USE_MAIN_ELEMENT_SECTION']) && $params['USE_MAIN_ELEMENT_SECTION'] === 'Y';
-		$params['STRICT_SECTION_CHECK'] = isset($params['STRICT_SECTION_CHECK']) && $params['STRICT_SECTION_CHECK'] === 'Y';
 		$params['ADD_ELEMENT_CHAIN'] = isset($params['ADD_ELEMENT_CHAIN']) && $params['ADD_ELEMENT_CHAIN'] === 'Y';
-		$params['LINK_IBLOCK_TYPE'] = trim($params['LINK_IBLOCK_TYPE']);
-		$params['LINK_IBLOCK_ID'] = (int)$params['LINK_IBLOCK_ID'];
-		$params['LINK_PROPERTY_SID'] = trim($params['LINK_PROPERTY_SID']);
-		$params['LINK_ELEMENTS_URL'] = trim($params['LINK_ELEMENTS_URL']) ?: 'link.php?PARENT_ELEMENT_ID=#ELEMENT_ID#';
+		$params['LINK_IBLOCK_TYPE'] = trim((string)($params['LINK_IBLOCK_TYPE'] ?? ''));
+		$params['LINK_IBLOCK_ID'] = (int)($params['LINK_IBLOCK_ID'] ?? 0);
+		$params['LINK_PROPERTY_SID'] = trim((string)($params['LINK_PROPERTY_SID'] ?? ''));
+		$params['LINK_ELEMENTS_URL'] = trim((string)($params['LINK_ELEMENTS_URL'] ?? ''));
+		if ($params['LINK_ELEMENTS_URL'] === '')
+		{
+			$params['LINK_ELEMENTS_URL'] = 'link.php?PARENT_ELEMENT_ID=#ELEMENT_ID#';
+		}
 
 		$params['SHOW_WORKFLOW'] = $this->request->get('show_workflow') === 'Y';
 		if ($params['SHOW_WORKFLOW'])
@@ -120,6 +133,8 @@ abstract class Element extends Base
 
 	protected function getIblockParams(&$params)
 	{
+		$usePropertyFeatures = Iblock\Model\PropertyFeature::isEnabledFeatures();
+
 		if (!isset($params['PROPERTY_CODE']) || !is_array($params['PROPERTY_CODE']))
 		{
 			$params['PROPERTY_CODE'] = array();
@@ -130,19 +145,6 @@ abstract class Element extends Base
 			if ($v == '')
 			{
 				unset($params['PROPERTY_CODE'][$k]);
-			}
-		}
-
-		if (!isset($params['PRODUCT_PROPERTIES']) || !is_array($params['PRODUCT_PROPERTIES']))
-		{
-			$params['PRODUCT_PROPERTIES'] = array();
-		}
-
-		foreach ($params['PRODUCT_PROPERTIES'] as $k => $v)
-		{
-			if ($v == '')
-			{
-				unset($params['PRODUCT_PROPERTIES'][$k]);
 			}
 		}
 
@@ -190,26 +192,79 @@ abstract class Element extends Base
 			$params['OFFERS_PROPERTY_CODE'][] = 'DETAIL_PICTURE';
 		}
 
-		if (!isset($params['OFFERS_CART_PROPERTIES']) || !is_array($params['OFFERS_CART_PROPERTIES']))
+		$cartProperties = [];
+		$offersCartProperties = [];
+		$offerTreeProperties = [];
+		if (!$usePropertyFeatures)
 		{
-			$params['OFFERS_CART_PROPERTIES'] = array();
-		}
-
-		foreach ($params['OFFERS_CART_PROPERTIES'] as $i => $pid)
-		{
-			if ($pid == '')
+			if (!isset($params['PRODUCT_PROPERTIES']) || !is_array($params['PRODUCT_PROPERTIES']))
 			{
-				unset($params['OFFERS_CART_PROPERTIES'][$i]);
+				$params['PRODUCT_PROPERTIES'] = array();
 			}
+
+			foreach ($params['PRODUCT_PROPERTIES'] as $k => $v)
+			{
+				if ($v == '')
+				{
+					unset($params['PRODUCT_PROPERTIES'][$k]);
+				}
+			}
+			$cartProperties = $params['PRODUCT_PROPERTIES'];
+
+			if (!isset($params['OFFERS_CART_PROPERTIES']) || !is_array($params['OFFERS_CART_PROPERTIES']))
+			{
+				$params['OFFERS_CART_PROPERTIES'] = array();
+			}
+
+			foreach ($params['OFFERS_CART_PROPERTIES'] as $i => $pid)
+			{
+				if ($pid == '')
+				{
+					unset($params['OFFERS_CART_PROPERTIES'][$i]);
+				}
+			}
+			$offersCartProperties = $params['OFFERS_CART_PROPERTIES'];
+
+			if (!isset($params['OFFER_TREE_PROPS']))
+			{
+				$params['OFFER_TREE_PROPS'] = array();
+			}
+			elseif (!is_array($params['OFFER_TREE_PROPS']))
+			{
+				$params['OFFER_TREE_PROPS'] = array($params['OFFER_TREE_PROPS']);
+			}
+
+			foreach ($params['OFFER_TREE_PROPS'] as $key => $value)
+			{
+				$value = (string)$value;
+				if ($value == '' || $value === '-')
+				{
+					unset($params['OFFER_TREE_PROPS'][$key]);
+				}
+			}
+
+			if (empty($params['OFFER_TREE_PROPS']) && !empty($params['OFFERS_CART_PROPERTIES']))
+			{
+				$params['OFFER_TREE_PROPS'] = $params['OFFERS_CART_PROPERTIES'];
+				foreach ($params['OFFER_TREE_PROPS'] as $key => $value)
+				{
+					if ($value === '-')
+					{
+						unset($params['OFFER_TREE_PROPS'][$key]);
+					}
+				}
+			}
+			$offerTreeProperties = $params['OFFER_TREE_PROPS'];
 		}
 
 		return array(
 			$params['IBLOCK_ID'] => array(
 				'PROPERTY_CODE' => $params['PROPERTY_CODE'],
-				'CART_PROPERTIES' => $params['PRODUCT_PROPERTIES'],
+				'CART_PROPERTIES' => $cartProperties,
 				'OFFERS_FIELD_CODE' => $params['OFFERS_FIELD_CODE'],
 				'OFFERS_PROPERTY_CODE' => $params['OFFERS_PROPERTY_CODE'],
-				'OFFERS_CART_PROPERTIES' => $params['OFFERS_CART_PROPERTIES']
+				'OFFERS_CART_PROPERTIES' => $offersCartProperties,
+				'OFFERS_TREE_PROPS' => $offerTreeProperties
 			)
 		);
 	}
@@ -242,6 +297,14 @@ abstract class Element extends Base
 		if ($this->checkElementId())
 		{
 			parent::processResultData();
+			$this->arResult['IS_FACEBOOK_CONVERSION_CUSTOMIZE_PRODUCT_EVENT_ENABLED'] = false;
+			if (Loader::includeModule('sale'))
+			{
+				$this->arResult['IS_FACEBOOK_CONVERSION_CUSTOMIZE_PRODUCT_EVENT_ENABLED'] = FacebookConversion::isEventEnabled(
+					'CustomizeProduct'
+				);
+			}
+
 		}
 		else
 		{
@@ -308,6 +371,50 @@ abstract class Element extends Base
 		}
 
 		$this->arResult['USE_CATALOG_BUTTONS'] = $useCatalogButtons;
+	}
+
+	/**
+	 * @return void
+	 */
+	protected function initIblockPropertyFeatures()
+	{
+		if (!Iblock\Model\PropertyFeature::isEnabledFeatures())
+			return;
+
+		$this->loadDisplayPropertyCodes($this->arParams['IBLOCK_ID']);
+		$this->loadBasketPropertyCodes($this->arParams['IBLOCK_ID']);
+		$this->loadOfferTreePropertyCodes($this->arParams['IBLOCK_ID']);
+	}
+
+	protected function checkProductIblock(array $product): bool
+	{
+		return ($product['PRODUCT_IBLOCK_ID'] == $this->arParams['IBLOCK_ID']);
+	}
+
+	/**
+	 * @param int $iblockId
+	 * @return void
+	 */
+	protected function loadDisplayPropertyCodes($iblockId)
+	{
+		$list = Iblock\Model\PropertyFeature::getDetailPageShowProperties(
+			$iblockId,
+			['CODE' => 'Y']
+		);
+		if ($list === null)
+			$list = [];
+		$this->storage['IBLOCK_PARAMS'][$iblockId]['PROPERTY_CODE'] = $list;
+		if ($this->useCatalog)
+		{
+			$list = Iblock\Model\PropertyFeature::getDetailPageShowProperties(
+				$this->getOffersIblockId($iblockId),
+				['CODE' => 'Y']
+			);
+			if ($list === null)
+				$list = [];
+			$this->storage['IBLOCK_PARAMS'][$iblockId]['OFFERS_PROPERTY_CODE'] = $list;
+		}
+		unset($list);
 	}
 
 	protected function getSelect()
@@ -499,13 +606,17 @@ abstract class Element extends Base
 					if (
 						($isArr && !empty($prop['VALUE']))
 						|| (!$isArr && (string)$prop['VALUE'] !== '')
+						|| Tools::isCheckboxProperty($prop)
 					)
 					{
-						$element['DISPLAY_PROPERTIES'][$pid] = \CIBlockFormatProperties::GetDisplayValue($element, $prop, 'catalog_out');
+						$element['DISPLAY_PROPERTIES'][$pid] = \CIBlockFormatProperties::GetDisplayValue($element, $prop);
 					}
 					unset($prop);
 				}
 				unset($pid);
+
+				\CIBlockFormatProperties::clearCache();
+				Tools::clearCache();
 			}
 
 			if ($this->arParams['ADD_PROPERTIES_TO_BASKET'] === 'Y' && !empty($iblockParams['CART_PROPERTIES']))
@@ -550,8 +661,8 @@ abstract class Element extends Base
 			$element['LINKED_ELEMENTS'] = array();
 
 			if (
-				strlen($this->arParams['LINK_PROPERTY_SID']) > 0
-				&& strlen($this->arParams['LINK_IBLOCK_TYPE']) > 0
+				$this->arParams['LINK_PROPERTY_SID'] <> ''
+				&& $this->arParams['LINK_IBLOCK_TYPE'] <> ''
 				&& $this->arParams['LINK_IBLOCK_ID'] > 0
 			)
 			{
@@ -624,6 +735,11 @@ abstract class Element extends Base
 					}
 
 					$this->storage['SECTION']['PATH'][] = $path;
+				}
+
+				if ($this->arParams['SECTIONS_CHAIN_START_FROM'] > 0)
+				{
+					$this->storage['SECTION']['PATH'] = array_slice($this->storage['SECTION']['PATH'], $this->arParams['SECTIONS_CHAIN_START_FROM']);
 				}
 
 				$element['SECTION'] = $this->storage['SECTION'];
@@ -699,18 +815,22 @@ abstract class Element extends Base
 			$this->arResult['META_TAGS'] = array();
 			$resultCacheKeys[] = 'META_TAGS';
 
+			$elementTitle = $this->arResult['NAME'];
+			if (
+				isset($this->arResult['IPROPERTY_VALUES']['ELEMENT_PAGE_TITLE'])
+				&& $this->arResult['IPROPERTY_VALUES']['ELEMENT_PAGE_TITLE'] !== ''
+			)
+			{
+				$elementTitle = $this->arResult['IPROPERTY_VALUES']['ELEMENT_PAGE_TITLE'];
+			}
 			if ($this->arParams['SET_TITLE'])
 			{
-				$this->arResult['META_TAGS']['TITLE'] = $this->arResult['IPROPERTY_VALUES']['ELEMENT_PAGE_TITLE'] != ''
-					? $this->arResult['IPROPERTY_VALUES']['ELEMENT_PAGE_TITLE']
-					: $this->arResult['NAME'];
+				$this->arResult['META_TAGS']['TITLE'] = $elementTitle;
 			}
 
 			if ($this->arParams['ADD_ELEMENT_CHAIN'])
 			{
-				$this->arResult['META_TAGS']['ELEMENT_CHAIN'] = $this->arResult['IPROPERTY_VALUES']['ELEMENT_PAGE_TITLE'] != ''
-					? $this->arResult['IPROPERTY_VALUES']['ELEMENT_PAGE_TITLE']
-					: $this->arResult['NAME'];
+				$this->arResult['META_TAGS']['ELEMENT_CHAIN'] = $elementTitle;
 			}
 
 			if ($this->arParams['SET_BROWSER_TITLE'] === 'Y')
@@ -817,11 +937,15 @@ abstract class Element extends Base
 
 				if ($this->arParams['SET_TITLE'] || isset($arResult[$this->arParams['BROWSER_TITLE']]))
 				{
-					$this->storage['TITLE_OPTIONS'] = array(
-						'ADMIN_EDIT_LINK' => $buttons['submenu']['edit_element']['ACTION'],
-						'PUBLIC_EDIT_LINK' => $buttons['edit']['edit_element']['ACTION'],
-						'COMPONENT_NAME' => $this->getName(),
-					);
+					$this->storage['TITLE_OPTIONS'] = null;
+					if (isset($buttons['submenu']['edit_element']))
+					{
+						$this->storage['TITLE_OPTIONS'] = [
+							'ADMIN_EDIT_LINK' => $buttons['submenu']['edit_element']['ACTION'],
+							'PUBLIC_EDIT_LINK' => $buttons['edit']['edit_element']['ACTION'],
+							'COMPONENT_NAME' => $this->getName(),
+						];
+					}
 				}
 			}
 		}
@@ -888,7 +1012,7 @@ abstract class Element extends Base
 		{
 			foreach ($arResult['SECTION']['PATH'] as $path)
 			{
-				if ($path['IPROPERTY_VALUES']['SECTION_PAGE_TITLE'] != '')
+				if (isset($path['IPROPERTY_VALUES']['SECTION_PAGE_TITLE']) && $path['IPROPERTY_VALUES']['SECTION_PAGE_TITLE'] !== '')
 				{
 					$APPLICATION->AddChainItem($path['IPROPERTY_VALUES']['SECTION_PAGE_TITLE'], $path['~SECTION_PAGE_URL']);
 				}
@@ -1048,42 +1172,16 @@ abstract class Element extends Base
 		{
 			$params['LABEL_PROP_MOBILE'] = array_flip($params['LABEL_PROP_MOBILE']);
 		}
+		$params['ENLARGE_PROP'] = isset($params['ENLARGE_PROP']) ? trim($params['ENLARGE_PROP']) : '';
+		if ($params['ENLARGE_PROP'] === '-')
+		{
+			$params['ENLARGE_PROP'] = '';
+		}
 
 		$params['OFFER_ADD_PICT_PROP'] = isset($params['OFFER_ADD_PICT_PROP']) ? trim($params['OFFER_ADD_PICT_PROP']) : '';
 		if ($params['OFFER_ADD_PICT_PROP'] === '-')
 		{
 			$params['OFFER_ADD_PICT_PROP'] = '';
-		}
-
-		if (!isset($params['OFFER_TREE_PROPS']))
-		{
-			$params['OFFER_TREE_PROPS'] = array();
-		}
-		elseif (!is_array($params['OFFER_TREE_PROPS']))
-		{
-			$params['OFFER_TREE_PROPS'] = array($params['OFFER_TREE_PROPS']);
-		}
-
-		foreach ($params['OFFER_TREE_PROPS'] as $key => $value)
-		{
-			$value = (string)$value;
-			if ($value == '' || $value === '-')
-			{
-				unset($params['OFFER_TREE_PROPS'][$key]);
-			}
-		}
-
-		if (empty($params['OFFER_TREE_PROPS']) && isset($params['OFFERS_CART_PROPERTIES']) && is_array($params['OFFERS_CART_PROPERTIES']))
-		{
-			$params['OFFER_TREE_PROPS'] = $params['OFFERS_CART_PROPERTIES'];
-			foreach ($params['OFFER_TREE_PROPS'] as $key => $value)
-			{
-				$value = (string)$value;
-				if ($value == '' || $value === '-')
-				{
-					unset($params['OFFER_TREE_PROPS'][$key]);
-				}
-			}
 		}
 
 		if (!isset($params['MAIN_BLOCK_PROPERTY_CODE']) || !is_array($params['MAIN_BLOCK_PROPERTY_CODE']))
@@ -1116,9 +1214,10 @@ abstract class Element extends Base
 		$this->storage['IBLOCK_PARAMS'][$params['IBLOCK_ID']]['LABEL_PROP_MOBILE'] = $params['LABEL_PROP_MOBILE'];
 		$this->storage['IBLOCK_PARAMS'][$params['IBLOCK_ID']]['ENLARGE_PROP'] = $params['ENLARGE_PROP'];
 		$this->storage['IBLOCK_PARAMS'][$params['IBLOCK_ID']]['OFFERS_ADD_PICT_PROP'] = $params['OFFER_ADD_PICT_PROP'];
-		$this->storage['IBLOCK_PARAMS'][$params['IBLOCK_ID']]['OFFERS_TREE_PROPS'] = $params['OFFER_TREE_PROPS'];
 		$this->storage['IBLOCK_PARAMS'][$params['IBLOCK_ID']]['MAIN_BLOCK_PROPERTY_CODE'] = $params['MAIN_BLOCK_PROPERTY_CODE'];
 		$this->storage['IBLOCK_PARAMS'][$params['IBLOCK_ID']]['MAIN_BLOCK_OFFERS_PROPERTY_CODE'] = $params['MAIN_BLOCK_OFFERS_PROPERTY_CODE'];
+
+		unset($skuTreeProperties);
 	}
 
 	protected function getTemplateDefaultParams()
@@ -1163,7 +1262,7 @@ abstract class Element extends Base
 		$double = array();
 		$item['OFFER_GROUP'] = false;
 		$item['OFFERS_PROP'] = false;
-		$ids = array($item['ID']);
+
 		$iblockParams = $this->storage['IBLOCK_PARAMS'][$item['IBLOCK_ID']];
 
 		$boolSkuDisplayProps = false;
@@ -1178,7 +1277,6 @@ abstract class Element extends Base
 			if (isset($double[$offer['ID']]))
 				continue;
 
-			$ids[] = $offer['ID'];
 			$offer['OFFER_GROUP'] = false;
 
 			$row = array();
@@ -1196,6 +1294,7 @@ abstract class Element extends Base
 			{
 				$boolSkuDisplayProps = true;
 			}
+			$offer['TREE'] = [];
 
 			$double[$offer['ID']] = true;
 			$newOffers[$keyOffer] = $offer;
@@ -1214,11 +1313,6 @@ abstract class Element extends Base
 			{
 				if ($boolExist)
 				{
-					if (!isset($item['OFFERS'][$keyOffer]['TREE']))
-					{
-						$item['OFFERS'][$keyOffer]['TREE'] = array();
-					}
-
 					$item['OFFERS'][$keyOffer]['TREE']['PROP_'.$skuPropList[$propCode]['ID']] = $matrix[$keyOffer][$propCode]['VALUE'];
 					$item['OFFERS'][$keyOffer]['SKU_SORT_'.$propCode] = $matrix[$keyOffer][$propCode]['SORT'];
 					$usedFields[$propCode] = true;
@@ -1239,61 +1333,44 @@ abstract class Element extends Base
 
 	protected function editTemplateProductSets(&$item)
 	{
-		$ids = array($item['ID']);
-		$offerSet = array();
+		$result = array();
+		if (!Catalog\Config\Feature::isProductSetsEnabled())
+			return $result;
+		if (!isset($item['PRODUCT']['TYPE']))
+			return $result;
 
-		foreach ($item['OFFERS'] as $offer)
+		$parentBundle = ($item['PRODUCT']['BUNDLE'] == 'Y');
+		if ($parentBundle)
+			$result[$item['ID']] = true;
+		if ($item['PRODUCT']['TYPE'] == Catalog\ProductTable::TYPE_SKU)
 		{
-			$ids[] = $offer['ID'];
-		}
-
-		if (!empty($ids) && \CBXFeatures::IsFeatureEnabled('CatCompleteSet'))
-		{
-			$offerSet = array_fill_keys($ids, false);
-			$productSetIterator = \CCatalogProductSet::getList(
-				array(),
-				array(
-					'@OWNER_ID' => $ids,
-					'=SET_ID' => 0,
-					'=TYPE' => \CCatalogProductSet::TYPE_GROUP
-				),
-				false,
-				false,
-				array('ID', 'OWNER_ID')
-			);
-			while ($set = $productSetIterator->Fetch())
+			foreach ($item['OFFERS'] as $offer)
 			{
-				$set['OWNER_ID'] = (int)$set['OWNER_ID'];
-				$offerSet[$set['OWNER_ID']] = true;
-				$item['OFFER_GROUP'] = true;
-			}
-
-			if ($offerSet[$item['ID']])
-			{
-				foreach ($offerSet as &$setOfferValue)
+				if (
+					$parentBundle
+					|| ($offer['PRODUCT']['BUNDLE'] == 'Y')
+				)
 				{
-					if ($setOfferValue === false)
-					{
-						$setOfferValue = true;
-					}
+					$result[$offer['ID']] = true;
 				}
-				unset($setOfferValue, $offerSet[$item['ID']]);
 			}
-
-			if ($item['OFFER_GROUP'])
-			{
-				$offerSet = array_filter($offerSet);
-				$item['OFFER_GROUP_VALUES'] = array_keys($offerSet);
-			}
+			unset($offer);
 		}
+		unset($parentBundle);
 
-		return $offerSet;
+		$item['OFFER_GROUP'] = !empty($result);
+		if (!empty($result))
+			$item['OFFER_GROUP_VALUES'] = array_keys($result);
+
+		return $result;
 	}
 
 	protected function editTemplateJsOffers(&$item, $offerSet)
 	{
-		$matrix = array();
+		$matrix = [];
 		$intSelected = -1;
+
+		$offerText = $this->arParams['SHOW_SKU_DESCRIPTION'] === 'Y';
 
 		foreach ($item['OFFERS'] as $keyOffer => $offer)
 		{
@@ -1315,17 +1392,19 @@ abstract class Element extends Base
 			$skuProps = false;
 			if (!empty($offer['DISPLAY_PROPERTIES']))
 			{
-				$skuProps = array();
+				$skuProps = [];
 				foreach ($offer['DISPLAY_PROPERTIES'] as $oneProp)
 				{
-					if ($oneProp['PROPERTY_TYPE'] === 'F')
+					if ($oneProp['PROPERTY_TYPE'] === Iblock\PropertyTable::TYPE_FILE)
+					{
 						continue;
+					}
 
-					$skuProps[] = array(
+					$skuProps[] = [
 						'CODE' => $oneProp['CODE'],
 						'NAME' => $oneProp['NAME'],
-						'VALUE' => $oneProp['DISPLAY_VALUE']
-					);
+						'VALUE' => $oneProp['DISPLAY_VALUE'],
+					];
 				}
 				unset($oneProp);
 			}
@@ -1338,12 +1417,16 @@ abstract class Element extends Base
 
 			$ratioSelectedIndex = $offer['ITEM_MEASURE_RATIO_SELECTED'];
 			$firstPhoto = reset($offer['MORE_PHOTO']);
-			$arOneRow = array(
+			$oneRow = [
 				'ID' => $offer['ID'],
 				'CODE' => $offer['CODE'],
-				'NAME' => $offer['~NAME'],
+				'NAME' => $offer['~NAME'] ?? $item['~NAME'],
 				'TREE' => $offer['TREE'],
 				'DISPLAY_PROPERTIES' => $skuProps,
+				'PREVIEW_TEXT' => $offerText ? $offer['PREVIEW_TEXT'] : '',
+				'PREVIEW_TEXT_TYPE' => $offerText ? $offer['PREVIEW_TEXT_TYPE'] : '',
+				'DETAIL_TEXT' => $offerText ? $offer['DETAIL_TEXT'] : '',
+				'DETAIL_TEXT_TYPE' => $offerText ? $offer['DETAIL_TEXT_TYPE'] : '',
 				'ITEM_PRICE_MODE' => $offer['ITEM_PRICE_MODE'],
 				'ITEM_PRICES' => $offer['ITEM_PRICES'],
 				'ITEM_PRICE_SELECTED' => $offer['ITEM_PRICE_SELECTED'],
@@ -1360,13 +1443,13 @@ abstract class Element extends Base
 				'MEASURE' => $offer['ITEM_MEASURE']['TITLE'],
 				'OFFER_GROUP' => (isset($offerSet[$offer['ID']]) && $offerSet[$offer['ID']]),
 				'CAN_BUY' => $offer['CAN_BUY'],
-				'CATALOG_SUBSCRIBE' => $offer['CATALOG_SUBSCRIBE'],
+				'CATALOG_SUBSCRIBE' => $offer['PRODUCT']['SUBSCRIBE'],
 				'SLIDER' => $offer['MORE_PHOTO'],
 				'SLIDER_COUNT' => $offer['MORE_PHOTO_COUNT'],
-			);
+			];
 			unset($ratioSelectedIndex);
 
-			$matrix[$keyOffer] = $arOneRow;
+			$matrix[$keyOffer] = $oneRow;
 		}
 
 		if ($intSelected == -1)
@@ -1438,6 +1521,7 @@ abstract class Element extends Base
 		$this->editTemplateProductSlider($item, $item['IBLOCK_ID'], 0, $this->arParams['ADD_DETAIL_TO_SLIDER'] === 'Y', array($this->arResult['DEFAULT_PICTURE']));
 		$this->editTemplateCatalogInfo($item);
 
+		$item['SHOW_OFFERS_PROPS'] = false;
 		if ($item['CATALOG'] && !empty($item['OFFERS']))
 		{
 			$needValues = array();
@@ -1475,35 +1559,27 @@ abstract class Element extends Base
 
 		if ($item['MODULES']['catalog'] && $item['CATALOG'])
 		{
-			if ($item['CATALOG_TYPE'] == \CCatalogProduct::TYPE_PRODUCT || $item['CATALOG_TYPE'] == \CCatalogProduct::TYPE_SET)
+			if (
+				$item['CATALOG_TYPE'] == Catalog\ProductTable::TYPE_PRODUCT
+				|| $item['CATALOG_TYPE'] == Catalog\ProductTable::TYPE_SET
+			)
 			{
-				\CIBlockPriceTools::setRatioMinPrice($item, false);
-				$item['MIN_BASIS_PRICE'] = $item['MIN_PRICE'];
+				if (isset($item['MIN_PRICE']))
+				{
+					\CIBlockPriceTools::setRatioMinPrice($item, false);
+					$item['MIN_BASIS_PRICE'] = $item['MIN_PRICE'];
+				}
 			}
 
 			if (
-				\CBXFeatures::IsFeatureEnabled('CatCompleteSet')
+				Catalog\Config\Feature::isProductSetsEnabled()
 				&& (
-					$item['CATALOG_TYPE'] == \CCatalogProduct::TYPE_PRODUCT
-					|| $item['CATALOG_TYPE'] == \CCatalogProduct::TYPE_SET
+					$item['CATALOG_TYPE'] == Catalog\ProductTable::TYPE_PRODUCT
+					|| $item['CATALOG_TYPE'] == Catalog\ProductTable::TYPE_SET
 				)
 			)
 			{
-				$productSetIterator = \CCatalogProductSet::getList(
-					array(),
-					array(
-						'@OWNER_ID' => $item['ID'],
-						'=SET_ID' => 0,
-						'=TYPE' => \CCatalogProductSet::TYPE_GROUP
-					),
-					false,
-					false,
-					array('ID', 'OWNER_ID')
-				);
-				if ($set = $productSetIterator->Fetch())
-				{
-					$item['OFFER_GROUP'] = true;
-				}
+				$item['OFFER_GROUP'] = (isset($item['PRODUCT']['BUNDLE']) && $item['PRODUCT']['BUNDLE'] === 'Y');
 			}
 		}
 

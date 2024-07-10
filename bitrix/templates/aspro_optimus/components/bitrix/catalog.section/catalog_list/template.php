@@ -147,7 +147,7 @@
 														<td>
 															<span>
 															<?
-															if(count($arProp["DISPLAY_VALUE"])>1) { foreach($arProp["DISPLAY_VALUE"] as $key => $value) { if ($arProp["DISPLAY_VALUE"][$key+1]) {echo $value.", ";} else {echo $value;} }}
+															if(is_array($arProp["DISPLAY_VALUE"]) && count($arProp["DISPLAY_VALUE"])>1) { foreach($arProp["DISPLAY_VALUE"] as $key => $value) { if ($arProp["DISPLAY_VALUE"][$key+1]) {echo $value.", ";} else {echo $value;} }}
 															else { echo $arProp["DISPLAY_VALUE"]; }
 															?>
 															</span>
@@ -453,10 +453,24 @@
 														<td><span><?=$arProp["NAME"]?></span></td>
 														<td>
 															<span>
-															<?
-															if(count($arProp["DISPLAY_VALUE"])>1) { foreach($arProp["DISPLAY_VALUE"] as $key => $value) { if ($arProp["DISPLAY_VALUE"][$key+1]) {echo $value.", ";} else {echo $value;} }}
-															else { echo $arProp["DISPLAY_VALUE"]; }
-															?>
+														<?php
+                                                        if (is_array($arProp["DISPLAY_VALUE"])) {
+                                                            if (count($arProp["DISPLAY_VALUE"]) > 1) {
+                                                                foreach ($arProp["DISPLAY_VALUE"] as $key => $value) {
+                                                                    if (isset($arProp["DISPLAY_VALUE"][$key + 1])) {
+                                                                        echo $value . ", ";
+                                                                    } else {
+                                                                        echo $value;
+                                                                    }
+                                                                }
+                                                            } else {
+                                                                echo $arProp["DISPLAY_VALUE"][0];
+                                                            }
+                                                        } else {
+                                                            echo $arProp["DISPLAY_VALUE"];
+                                                        }
+                                                        ?>
+
 															</span>
 														</td>
 													</tr>

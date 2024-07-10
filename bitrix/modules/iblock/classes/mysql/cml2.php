@@ -1,14 +1,20 @@
-<?
+<?php
+use Bitrix\Main;
+use Bitrix\Main\DB\SqlQueryException;
+
 /*
 This class is used to parse and load an xml file into database table.
 */
 class CIBlockXMLFile
 {
+	public const UNPACK_STATUS_ERROR = -1;
+	public const UNPACK_STATUS_CONTINUE = 1;
+	public const UNPACK_STATUS_FINAL = 2;
 	var $_table_name = "";
 	var $_sessid = "";
 
 	var $charset = false;
-	var $element_stack = false;
+	var $element_stack = [];
 	var $file_position = 0;
 
 	var $read_size = 10240;
@@ -16,22 +22,9 @@ class CIBlockXMLFile
 	var $buf_position = 0;
 	var $buf_len = 0;
 
-	private $_get_xml_chunk_function = "_get_xml_chunk";
-
 	function __construct($table_name = "b_xml_tree")
 	{
 		$this->_table_name = strtolower($table_name);
-		if (defined("BX_UTF"))
-		{
-			if (function_exists("mb_orig_strpos") && function_exists("mb_orig_strlen") && function_exists("mb_orig_substr"))
-				$this->_get_xml_chunk_function = "_get_xml_chunk_mb_orig";
-			else
-				$this->_get_xml_chunk_function = "_get_xml_chunk_mb";
-		}
-		else
-		{
-			$this->_get_xml_chunk_function = "_get_xml_chunk";
-		}
 	}
 
 	function StartSession($sess_id)
@@ -94,77 +87,104 @@ class CIBlockXMLFile
 		return true;
 	}
 
+	public function GetRoot()
+	{
+		global $DB;
+		$rs = $DB->Query("SELECT ID MID from ".$this->_table_name." WHERE PARENT_ID = 0");
+		$ar = $rs->Fetch();
+		return $ar["MID"];
+	}
+
 	/*
 	This function have to called once at the import start.
 
 	return : result of the CDatabase::Query method
 	We use drop due to mysql innodb slow truncate bug.
 	*/
-	function DropTemporaryTables()
+	public function DropTemporaryTables()
 	{
-		if(!isset($this) || !is_object($this) || strlen($this->_table_name) <= 0)
+		$connection = Main\Application::getConnection();
+
+		if ($connection->isTableExists($this->_table_name))
 		{
-			$ob = new CIBlockXMLFile;
-			return $ob->DropTemporaryTables();
+			$connection->dropTable($this->_table_name);
 		}
-		else
-		{
-			global $DB;
-			if($DB->TableExists($this->_table_name))
-				return $DB->DDL("drop table ".$this->_table_name);
-			else
-				return true;
-		}
+
+		return true;
 	}
 
-	function CreateTemporaryTables($with_sess_id = false)
+	public function CreateTemporaryTables($with_sess_id = false)
 	{
-		if(!isset($this) || !is_object($this) || strlen($this->_table_name) <= 0)
+		$connection = Main\Application::getConnection();
+
+		if ($connection->isTableExists($this->_table_name))
 		{
-			$ob = new CIBlockXMLFile;
-			return $ob->CreateTemporaryTables();
+			return false;
 		}
-		else
+
+		if (
+			$connection instanceof Main\DB\MysqlCommonConnection
+			&& defined('MYSQL_TABLE_TYPE')
+			&& MYSQL_TABLE_TYPE !== ''
+		)
 		{
-			global $DB;
+			// TODO: remove try-catch when mysql 8.0 will be minimal system requirement
+			try
+			{
+				$connection->query('SET default_storage_engine = \'' . MYSQL_TABLE_TYPE . '\'');
+			}
+			catch (SqlQueryException)
+			{
+				try
+				{
+					$connection->query('SET storage_engine = \''.MYSQL_TABLE_TYPE.'\'');
+				}
+				catch (SqlQueryException)
+				{
 
-			if(defined("MYSQL_TABLE_TYPE") && strlen(MYSQL_TABLE_TYPE) > 0)
-				$DB->Query("SET storage_engine = '".MYSQL_TABLE_TYPE."'", true);
-
-			$res = $DB->DDL("create table ".$this->_table_name."
-				(
-					ID int(11) not null auto_increment,
-					".($with_sess_id? "SESS_ID varchar(32),": "")."
-					PARENT_ID int(11),
-					LEFT_MARGIN int(11),
-					RIGHT_MARGIN int(11),
-					DEPTH_LEVEL int(11),
-					NAME varchar(255),
-					VALUE longtext,
-					ATTRIBUTES text,
-					PRIMARY KEY (ID)
-				)
-			");
-
-			if ($res && defined("BX_XML_CREATE_INDEXES_IMMEDIATELY"))
-				$res = $this->IndexTemporaryTables($with_sess_id);
-
-			return $res;
+				}
+			}
 		}
+
+		$fields = [
+			'ID' => (new Main\ORM\Fields\IntegerField('ID'))->configureSize(8),
+			'SESS_ID' => (new Main\ORM\Fields\StringField('SESS_ID'))->configureSize(8),
+			'PARENT_ID' => (new Main\ORM\Fields\IntegerField('PARENT_ID'))->configureSize(8)->configureNullable(),
+			'LEFT_MARGIN' => (new Main\ORM\Fields\IntegerField('LEFT_MARGIN'))->configureNullable(),
+			'RIGHT_MARGIN' => (new Main\ORM\Fields\IntegerField('RIGHT_MARGIN'))->configureNullable(),
+			'DEPTH_LEVEL' => (new Main\ORM\Fields\IntegerField('DEPTH_LEVEL'))->configureNullable(),
+			'NAME' => (new Main\ORM\Fields\StringField('NAME'))->configureSize(255)->configureNullable(),
+			'VALUE' => (new Main\ORM\Fields\TextField('VALUE'))->configureLong()->configureNullable(),
+			'ATTRIBUTES' => (new Main\ORM\Fields\TextField('ATTRIBUTES'))->configureNullable(),
+		];
+		if (!$with_sess_id)
+		{
+			unset($fields['SESS_ID']);
+		}
+
+		$connection->createTable($this->_table_name, $fields, ['ID'] ,['ID']);
+
+		if (defined('BX_XML_CREATE_INDEXES_IMMEDIATELY'))
+		{
+			$this->IndexTemporaryTables($with_sess_id);
+		}
+
+		return true;
 	}
 
 	function IsExistTemporaryTable()
 	{
-		global $DB;
-
-		if (!isset($this) || !is_object($this) || strlen($this->_table_name) <= 0)
+		if (!isset($this) || !is_object($this) || $this->_table_name == '')
 		{
 			$ob = new CIBlockXMLFile;
+
 			return $ob->IsExistTemporaryTable();
 		}
 		else
 		{
-			return $DB->TableExists($this->_table_name);
+			$connection = Main\Application::getConnection();
+
+			return $connection->isTableExists($this->_table_name);
 		}
 	}
 
@@ -172,7 +192,9 @@ class CIBlockXMLFile
 	{
 		global $DB;
 
-		if (!isset($this) || !is_object($this) || strlen($this->_table_name) <= 0)
+		$parentID = (int)$parentID;
+
+		if (!isset($this) || !is_object($this) || $this->_table_name == '')
 		{
 			$ob = new CIBlockXMLFile;
 			return $ob->GetCountItemsWithParent($parentID);
@@ -194,35 +216,36 @@ class CIBlockXMLFile
 
 	return : result of the CDatabase::Query method
 	*/
-	function IndexTemporaryTables($with_sess_id = false)
+	public function IndexTemporaryTables($with_sess_id = false)
 	{
-		if(!isset($this) || !is_object($this) || strlen($this->_table_name) <= 0)
+		$connection = \Bitrix\Main\Application::getConnection();
+
+		if($with_sess_id)
 		{
-			$ob = new CIBlockXMLFile;
-			return $ob->IndexTemporaryTables();
+			if (!$connection->isIndexExists($this->_table_name, ['SESS_ID', 'PARENT_ID']))
+			{
+				$connection->createIndex($this->_table_name, 'ix_' . $this->_table_name . '_parent', ['SESS_ID', 'PARENT_ID']);
+			}
+
+			if (!$connection->isIndexExists($this->_table_name, ['SESS_ID', 'LEFT_MARGIN']))
+			{
+				$connection->createIndex($this->_table_name, 'ix_' . $this->_table_name . '_left', ['SESS_ID', 'LEFT_MARGIN']);
+			}
 		}
 		else
 		{
-			global $DB;
-			$res = true;
-
-			if($with_sess_id)
+			if (!$connection->isIndexExists($this->_table_name, ['PARENT_ID']))
 			{
-				if(!$DB->IndexExists($this->_table_name, array("SESS_ID", "PARENT_ID")))
-					$res = $DB->DDL("CREATE INDEX ix_".$this->_table_name."_parent on ".$this->_table_name."(SESS_ID, PARENT_ID)");
-				if($res && !$DB->IndexExists($this->_table_name, array("SESS_ID", "LEFT_MARGIN")))
-					$res = $DB->DDL("CREATE INDEX ix_".$this->_table_name."_left on ".$this->_table_name."(SESS_ID, LEFT_MARGIN)");
-			}
-			else
-			{
-				if(!$DB->IndexExists($this->_table_name, array("PARENT_ID")))
-					$res = $DB->DDL("CREATE INDEX ix_".$this->_table_name."_parent on ".$this->_table_name."(PARENT_ID)");
-				if($res && !$DB->IndexExists($this->_table_name, array("LEFT_MARGIN")))
-					$res = $DB->DDL("CREATE INDEX ix_".$this->_table_name."_left on ".$this->_table_name."(LEFT_MARGIN)");
+				$connection->createIndex($this->_table_name, 'ix_' . $this->_table_name . '_parent', ['PARENT_ID']);
 			}
 
-			return $res;
+			if (!$connection->isIndexExists($this->_table_name, ['LEFT_MARGIN']))
+			{
+				$connection->createIndex($this->_table_name, 'ix_' . $this->_table_name . '_left', ['LEFT_MARGIN']);
+			}
 		}
+
+		return true;
 	}
 
 	function Add($arFields)
@@ -230,15 +253,21 @@ class CIBlockXMLFile
 		global $DB;
 
 		$strSql1 = "PARENT_ID, LEFT_MARGIN, RIGHT_MARGIN, DEPTH_LEVEL, NAME";
-		$strSql2 = intval($arFields["PARENT_ID"]).", ".intval($arFields["LEFT_MARGIN"]).", ".intval($arFields["RIGHT_MARGIN"]).", ".intval($arFields["DEPTH_LEVEL"]).", '".$DB->ForSQL($arFields["NAME"], 255)."'";
+		$strSql2 = (int)$arFields["PARENT_ID"] .", "
+			. (int)$arFields["LEFT_MARGIN"] . ", "
+			. (int)($arFields["RIGHT_MARGIN"] ?? 0) . ", "
+			. (int)($arFields["DEPTH_LEVEL"] ?? 0) .", '"
+			. $DB->ForSQL($arFields["NAME"] ?? '', 255)
+			."'"
+		;
 
-		if(array_key_exists("ATTRIBUTES", $arFields))
+		if (isset($arFields["ATTRIBUTES"]))
 		{
 			$strSql1 .= ", ATTRIBUTES";
 			$strSql2 .= ", '".$DB->ForSQL($arFields["ATTRIBUTES"])."'";
 		}
 
-		if(array_key_exists("VALUE", $arFields))
+		if (isset($arFields["VALUE"]))
 		{
 			$strSql1 .= ", VALUE";
 			$strSql2 .= ", '".$DB->ForSQL($arFields["VALUE"])."'";
@@ -252,7 +281,7 @@ class CIBlockXMLFile
 
 		$strSql = "INSERT INTO ".$this->_table_name." (".$strSql1.") VALUES (".$strSql2.")";
 
-		$rs = $DB->Query($strSql);
+		$DB->Query($strSql);
 
 		return $DB->LastID();
 	}
@@ -277,8 +306,6 @@ class CIBlockXMLFile
 	*/
 	function ReadXMLToDatabase($fp, &$NS, $time_limit=0, $read_size = 1024)
 	{
-		global $APPLICATION;
-
 		//Initialize object
 		if(!array_key_exists("charset", $NS))
 			$NS["charset"] = false;
@@ -304,13 +331,12 @@ class CIBlockXMLFile
 			$end_time = time() + 365*24*3600; // One year
 
 		$cs = $this->charset;
-		$_get_xml_chunk = array($this, $this->_get_xml_chunk_function);
 		fseek($fp, $this->file_position);
-		while(($xmlChunk = call_user_func_array($_get_xml_chunk, array($fp))) !== false)
+		while(($xmlChunk = $this->_get_xml_chunk($fp)) !== false)
 		{
 			if($cs)
 			{
-				$xmlChunk = $APPLICATION->ConvertCharset($xmlChunk, $cs, LANG_CHARSET);
+				$xmlChunk = Main\Text\Encoding::convertEncoding($xmlChunk, $cs, LANG_CHARSET);
 			}
 
 			if($xmlChunk[0] == "/")
@@ -321,7 +347,7 @@ class CIBlockXMLFile
 			}
 			elseif($xmlChunk[0] == "!" || $xmlChunk[0] == "?")
 			{
-				if(substr($xmlChunk, 0, 4) === "?xml")
+				if(strncmp($xmlChunk, "?xml", 4) === 0)
 				{
 					if(preg_match('#encoding[\s]*=[\s]*"(.*?)"#i', $xmlChunk, $arMatch))
 					{
@@ -342,10 +368,13 @@ class CIBlockXMLFile
 		return feof($fp);
 	}
 
-	/*
-	Internal function.
-	Used to read an xml by chunks started with "<" and endex with "<"
-	*/
+	/**
+	 * Internal function.
+	 * Used to read an xml by chunks started with "<" and endex with "<"
+	 *
+	 * @param resource $fp
+	 * @return bool|string
+	 */
 	function _get_xml_chunk($fp)
 	{
 		if($this->buf_position >= $this->buf_len)
@@ -408,10 +437,14 @@ class CIBlockXMLFile
 		return $result;
 	}
 
-	/*
-	Internal function.
-	Used to read an xml by chunks started with "<" and endex with "<"
-	*/
+	/**
+	 * Internal function.
+	 * Used to read an xml by chunks started with "<" and endex with "<"
+	 *
+	 * @deprecated deprecated since iblock 20.100.0
+	 * @param resource $fp
+	 * @return bool|string
+	 */
 	function _get_xml_chunk_mb_orig($fp)
 	{
 		if($this->buf_position >= $this->buf_len)
@@ -474,10 +507,14 @@ class CIBlockXMLFile
 		return $result;
 	}
 
-	/*
-	Internal function.
-	Used to read an xml by chunks started with "<" and endex with "<"
-	*/
+	/**
+	 * Internal function.
+	 * Used to read an xml by chunks started with "<" and endex with "<"
+	 *
+	 * @deprecated deprecated since iblock 20.100.0
+	 * @param resource $fp
+	 * @return bool|string
+	 */
 	function _get_xml_chunk_mb($fp)
 	{
 		if($this->buf_position >= $this->buf_len)
@@ -486,14 +523,14 @@ class CIBlockXMLFile
 			{
 				$this->buf = fread($fp, $this->read_size);
 				$this->buf_position = 0;
-				$this->buf_len = mb_strlen($this->buf);
+				$this->buf_len = mb_strlen($this->buf, 'latin1');
 			}
 			else
 				return false;
 		}
 
 		//Skip line delimiters (ltrim)
-		$xml_position = mb_strpos($this->buf, "<", $this->buf_position);
+		$xml_position = mb_strpos($this->buf, "<", $this->buf_position, 'latin1');
 		while($xml_position === $this->buf_position)
 		{
 			$this->buf_position++;
@@ -505,12 +542,12 @@ class CIBlockXMLFile
 				{
 					$this->buf = fread($fp, $this->read_size);
 					$this->buf_position = 0;
-					$this->buf_len = mb_strlen($this->buf);
+					$this->buf_len = mb_strlen($this->buf, 'latin1');
 				}
 				else
 					return false;
 			}
-			$xml_position = mb_strpos($this->buf, "<", $this->buf_position);
+			$xml_position = mb_strpos($this->buf, "<", $this->buf_position, 'latin1');
 		}
 
 		//Let's find next line delimiter
@@ -521,20 +558,20 @@ class CIBlockXMLFile
 			if(!feof($fp))
 			{
 				$this->buf .= fread($fp, $this->read_size);
-				$this->buf_len = mb_strlen($this->buf);
+				$this->buf_len = mb_strlen($this->buf, 'latin1');
 			}
 			else
 				break;
 
 			//Let's find xml tag start
-			$xml_position = mb_strpos($this->buf, "<", $next_search);
+			$xml_position = mb_strpos($this->buf, "<", $next_search, 'latin1');
 		}
 		if($xml_position===false)
 			$xml_position = $this->buf_len+1;
 
 		$len = $xml_position-$this->buf_position;
 		$this->file_position += $len;
-		$result = mb_substr($this->buf, $this->buf_position, $len);
+		$result = mb_substr($this->buf, $this->buf_position, $len, 'latin1');
 		$this->buf_position = $xml_position;
 
 		return $result;
@@ -546,7 +583,6 @@ class CIBlockXMLFile
 	*/
 	function _start_element($xmlChunk)
 	{
-		global $DB;
 		static $search = array(
 				"'&(quot|#34);'i",
 				"'&(lt|#60);'i",
@@ -564,20 +600,20 @@ class CIBlockXMLFile
 		$p = strpos($xmlChunk, ">");
 		if($p !== false)
 		{
-			if(substr($xmlChunk, $p - 1, 1)=="/")
+			if(substr($xmlChunk, $p - 1, 1) == "/")
 			{
 				$bHaveChildren = false;
-				$elementName = substr($xmlChunk, 0, $p-1);
+				$elementName = substr($xmlChunk, 0, $p - 1);
 				$DBelementValue = false;
 			}
 			else
 			{
 				$bHaveChildren = true;
 				$elementName = substr($xmlChunk, 0, $p);
-				$elementValue = substr($xmlChunk, $p+1);
+				$elementValue = substr($xmlChunk, $p + 1);
 				if(preg_match("/^\s*$/", $elementValue))
 					$DBelementValue = false;
-				elseif(strpos($elementValue, "&")===false)
+				elseif(strpos($elementValue, "&") === false)
 					$DBelementValue = $elementValue;
 				else
 					$DBelementValue = preg_replace($search, $replace, $elementValue);
@@ -586,11 +622,11 @@ class CIBlockXMLFile
 			if(($ps = strpos($elementName, " "))!==false)
 			{
 				//Let's handle attributes
-				$elementAttrs = substr($elementName, $ps+1);
+				$elementAttrs = substr($elementName, $ps + 1);
 				$elementName = substr($elementName, 0, $ps);
 				preg_match_all("/(\\S+)\\s*=\\s*[\"](.*?)[\"]/s".BX_UTF_PCRE_MODIFIER, $elementAttrs, $attrs_tmp);
 				$attrs = array();
-				if(strpos($elementAttrs, "&")===false)
+				if(strpos($elementAttrs, "&") === false)
 				{
 					foreach($attrs_tmp[1] as $i=>$attrs_tmp_1)
 						$attrs[$attrs_tmp_1] = $attrs_tmp[2][$i];
@@ -649,7 +685,7 @@ class CIBlockXMLFile
 		$child = array_pop($this->element_stack);
 		$this->element_stack[count($this->element_stack)-1]["R"] = $child["R"]+1;
 		if($child["R"] != $child["RO"])
-			$DB->Query("UPDATE ".$this->_table_name." SET RIGHT_MARGIN = ".intval($child["R"])." WHERE ID = ".intval($child["ID"]));
+			$DB->Query("UPDATE ".$this->_table_name." SET RIGHT_MARGIN = ".(int)$child["R"]." WHERE ID = ".(int)$child["ID"]);
 	}
 
 	/*
@@ -698,6 +734,15 @@ class CIBlockXMLFile
 		);
 		while($ar = $rs->Fetch())
 		{
+			if (
+				(int)$ar['PARENT_ID'] === 0
+				&& (int)$ar['RIGHT_MARGIN'] === 0
+				&& (int)$ar['DEPTH_LEVEL'] === 0
+				&& $ar['NAME'] === ''
+			)
+			{
+				continue;
+			}
 			if(isset($ar["VALUE_CLOB"]))
 				$ar["VALUE"] = $ar["VALUE_CLOB"];
 
@@ -719,12 +764,18 @@ class CIBlockXMLFile
 			else
 			{
 				$parent_id = $ar["PARENT_ID"];
-				if(!is_array($arIndex[$parent_id]))
-					$arIndex[$parent_id] = array();
+				if (!is_array($arIndex[$parent_id]))
+				{
+					$arIndex[$parent_id] = [];
+				}
 				$arIndex[$parent_id][$ar["NAME"]] = $ar["VALUE"];
 				$arIndex[$ar["ID"]] = &$arIndex[$parent_id][$ar["NAME"]];
 			}
 		}
+		unset($ar);
+		unset($rs);
+		unset($arIndex);
+		unset($arSalt);
 
 		return $arResult;
 	}
@@ -742,24 +793,36 @@ class CIBlockXMLFile
 			"VALUE" => "VALUE",
 		);
 		foreach($arSelect as $i => $field)
-			if(!array_key_exists($field, $arFields))
+		{
+			if (!isset($arFields[$field]))
+			{
 				unset($arSelect[$i]);
-		if(count($arSelect) <= 0)
+			}
+		}
+		if (empty($arSelect))
+		{
 			$arSelect[] = "*";
+		}
 
 		$arSQLWhere = array();
 		foreach($arFilter as $field => $value)
 		{
 			if($field == "ID" && is_array($value) && !empty($value))
-				$arSQLWhere[$field] = $field." in (".implode(",", array_map("intval", $value)).")";
+			{
+				Main\Type\Collection::normalizeArrayValuesByInt($value, false);
+				if (!empty($value))
+				{
+					$arSQLWhere[$field] = $field . " in (" . implode(",", $value) . ")";
+				}
+			}
 			elseif($field == "ID" || $field == "LEFT_MARGIN")
-				$arSQLWhere[$field] = $field." = ".intval($value);
+				$arSQLWhere[$field] = $field." = ".(int)$value;
 			elseif($field == "PARENT_ID" || $field == "PARENT_ID+0")
-				$arSQLWhere[$field] = $field." = ".intval($value);
+				$arSQLWhere[$field] = $field." = ".(int)$value;
 			elseif($field == ">ID")
-				$arSQLWhere[$field] = "ID > ".intval($value);
+				$arSQLWhere[$field] = "ID > ".(int)$value;
 			elseif($field == "><LEFT_MARGIN")
-				$arSQLWhere[$field] = "LEFT_MARGIN between ".intval($value[0])." AND ".intval($value[1]);
+				$arSQLWhere[$field] = "LEFT_MARGIN between ".(int)$value[0]." AND ".(int)$value[1];
 			elseif($field == "NAME")
 				$arSQLWhere[$field] = $field." = "."'".$DB->ForSQL($value)."'";
 		}
@@ -768,10 +831,14 @@ class CIBlockXMLFile
 
 		foreach($arOrder as $field => $by)
 		{
-			if(!array_key_exists($field, $arFields))
+			if(!isset($arFields[$field]))
+			{
 				unset($arSelect[$field]);
+			}
 			else
-				$arOrder[$field] = $field." ".($by=="desc"? "desc": "asc");
+			{
+				$arOrder[$field] = $field . " " . ($by == "desc" ? "desc" : "asc");
+			}
 		}
 
 		$strSql = "
@@ -797,76 +864,143 @@ class CIBlockXMLFile
 	function Delete($ID)
 	{
 		global $DB;
-		return $DB->Query("delete from ".$this->_table_name." where ID = ".intval($ID));
+		return $DB->Query("delete from ".$this->_table_name." where ID = ".(int)$ID);
 	}
 
-	public static function UnZip($file_name, $last_zip_entry = "", $start_time = 0, $interval = 0)
+	/**
+	 * @param string $fileName
+	 * @param int|null $lastIndex
+	 * @param int $interval
+	 * @return array
+	 */
+	public static function safeUnZip(string $fileName, ?int $lastIndex = null, int $interval = 0): array
 	{
-		global $APPLICATION;
+		$result = [
+			'STATUS' => self::UNPACK_STATUS_FINAL,
+			'DATA' => []
+		];
 
-		//Function and securioty checks
-		if(!function_exists("zip_open"))
-			return false;
-		$dir_name = substr($file_name, 0, strrpos($file_name, "/")+1);
-		if(strlen($dir_name) <= strlen($_SERVER["DOCUMENT_ROOT"]))
-			return false;
+		$startTime = time();
 
-		$hZip = zip_open($file_name);
-		if(!$hZip)
-			return false;
-		//Skip from last step
-		if($last_zip_entry)
+		$dirName = mb_substr($fileName, 0, mb_strrpos($fileName, '/') + 1);
+		if (mb_strlen($dirName) <= mb_strlen($_SERVER['DOCUMENT_ROOT']))
 		{
-			while($entry = zip_read($hZip))
-				if(zip_entry_name($entry) == $last_zip_entry)
-					break;
+			$result['STATUS'] = self::UNPACK_STATUS_ERROR;
+
+			return $result;
 		}
 
-		$io = CBXVirtualIo::GetInstance();
-		//Continue unzip
-		while($entry = zip_read($hZip))
+		/** @var CZip $archiver */
+		$archiver = CBXArchive::GetArchive($fileName, 'ZIP');
+		if (!($archiver instanceof IBXArchive))
 		{
-			$entry_name = zip_entry_name($entry);
-			//Check for directory
-			zip_entry_open($hZip, $entry);
-			if(zip_entry_filesize($entry))
+			$result['STATUS'] = self::UNPACK_STATUS_ERROR;
+
+			return $result;
+		}
+
+		if ($lastIndex !== null && $lastIndex < 0)
+		{
+			$lastIndex = null;
+		}
+
+		$archiveProperties = $archiver->GetProperties();
+		if (!is_array($archiveProperties))
+		{
+			$result['STATUS'] = self::UNPACK_STATUS_ERROR;
+
+			return $result;
+		}
+		if (!isset($archiveProperties['nb']))
+		{
+			$result['STATUS'] = self::UNPACK_STATUS_ERROR;
+
+			return $result;
+		}
+		$entries = (int)$archiveProperties['nb'];
+		for ($index = 0; $index < $entries; $index++)
+		{
+			if ($lastIndex !== null)
 			{
-
-				$file_name = trim(str_replace("\\", "/", trim($entry_name)), "/");
-				$file_name = $APPLICATION->ConvertCharset($file_name, "cp866", LANG_CHARSET);
-				$file_name = preg_replace("#^import_files/tmp/webdata/\\d+/\\d+/import_files/#", "import_files/", $file_name);
-
-				$bBadFile = HasScriptExtension($file_name)
-					|| IsFileUnsafe($file_name)
-					|| !$io->ValidatePathString("/".$file_name)
-				;
-
-				if(!$bBadFile)
+				if ($lastIndex >= $index)
 				{
-					$file_name =  $io->GetPhysicalName($dir_name.Rel2Abs("/", $file_name));
-					CheckDirPath($file_name);
-					$fout = fopen($file_name, "wb");
-					if(!$fout)
-						return false;
-					while($data = zip_entry_read($entry, 102400))
-					{
-						$data_len = function_exists('mb_strlen') ? mb_strlen($data, 'latin1') : strlen($data);
-						$result = fwrite($fout, $data);
-						if($result !== $data_len)
-							return false;
-					}
+					continue;
 				}
 			}
-			zip_entry_close($entry);
 
-			//Jump to next step
-			if($interval > 0 && (time()-$start_time) > ($interval))
+			$archiver->SetOptions([
+				'RULE' => [
+					'by_index' => [
+						[
+							'start' => $index,
+							'end' => $index,
+						]
+					]
+				]
+			]);
+
+			$stepResult = $archiver->Unpack($dirName);
+			if ($stepResult === true)
 			{
-				zip_close($hZip);
-				return $entry_name;
+				return $result;
+			}
+			if ($stepResult === false)
+			{
+				$result['STATUS'] = self::UNPACK_STATUS_ERROR;
+
+				return $result;
+			}
+
+			if ($interval > 0 && (time() - $startTime) > $interval)
+			{
+				$result['STATUS'] = self::UNPACK_STATUS_CONTINUE;
+				$result['DATA']['LAST_INDEX'] = $index;
+
+				return $result;
 			}
 		}
-		zip_close($hZip);
-		return true;
+
+		return $result;
+	}
+
+	/**
+	 * @deprecated deprecated since 23.100.0 - unsecure
+	 * @see CIBlockXMLFile::safeUnZip
+	 *
+	 * @param $file_name
+	 * @param $last_zip_entry
+	 * @param $start_time
+	 * @param $interval
+	 * @return bool|string
+	 */
+	public static function UnZip($file_name, $last_zip_entry = "", $start_time = 0, $interval = 0)
+	{
+		$last_zip_entry = (string)$last_zip_entry;
+		if ($last_zip_entry === '')
+		{
+			$last_zip_entry = null;
+		}
+		else
+		{
+			$last_zip_entry = (int)$last_zip_entry;
+		}
+
+		$internalResult = static::safeUnZip((string)$file_name, $last_zip_entry, (int)$interval);
+
+		switch ($internalResult['STATUS'])
+		{
+			case self::UNPACK_STATUS_ERROR:
+				$result = false;
+				break;
+			case self::UNPACK_STATUS_CONTINUE:
+				$result = $internalResult['DATA']['LAST_INDEX'];
+				break;
+			case self::UNPACK_STATUS_FINAL:
+			default:
+				$result = true;
+				break;
+		}
+
+		return $result;
 	}
 }

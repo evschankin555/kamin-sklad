@@ -127,3 +127,7 @@ body .flex-control-paging li { padding-left: 0px !important; }
 .similar_products_wrapp { text-align: left; }
 
 .display_list .list_item { width: 100%; }
+
+body > table.center {
+	display: none; /* Скрывает таблицу с классом "center" */
+}

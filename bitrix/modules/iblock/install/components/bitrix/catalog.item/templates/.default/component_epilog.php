@@ -13,9 +13,9 @@ if ($arParams['DISPLAY_COMPARE'])
 	$comparedIds = array();
 	$item = $templateData['ITEM'];
 
-	if (!empty($_SESSION[$arParams['COMPARE_NAME']][$item['IBLOCK_ID']]))
+	if (!empty($_SESSION[$arParams['COMPARE_NAME']][$item['IBLOCK_ID']]['ITEMS']))
 	{
-		if (!empty($item['JS_OFFERS']))
+		if (!empty($item['JS_OFFERS']) && is_array($item['JS_OFFERS']))
 		{
 			foreach ($item['JS_OFFERS'] as $key => $offer)
 			{
