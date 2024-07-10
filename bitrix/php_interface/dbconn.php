@@ -1,4 +1,4 @@
-<?
+<?php
 mb_internal_encoding('UTF-8');
 define("BX_USE_MYSQLI", true);
 define("DBPersistent", false);
@@ -8,7 +8,7 @@ $DBLogin = "a217442_ks";
 $DBPassword = "49yQruJU7d";
 $DBName = "a217442_ks";
 $DBDebug = true;
-$DBDebugToFile = true;
+$DBDebugToFile = false;
 
 define("DELAY_DB_CONNECT", true);
 define("CACHED_b_file", 3600);
@@ -31,5 +31,5 @@ define("BX_UTF", true);
 date_default_timezone_set("Etc/GMT-3");
 
 if(!(defined("CHK_EVENT") && CHK_EVENT===true))
-   define("BX_CRONTAB_SUPPORT", true);
+    define("BX_CRONTAB_SUPPORT", true);
 ?>
