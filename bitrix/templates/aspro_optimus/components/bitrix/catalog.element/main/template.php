@@ -257,9 +257,18 @@ setViewedProduct(<?=$arResult['ID']?>, <?=CUtil::PhpToJSObject($arViewedData, fa
 			</div>
 			<?/*thumbs*/?>
 			<?if(!$showCustomOffer || empty($arResult['OFFERS_PROP'])){
-				if(count($arResult["MORE_PHOTO"]) > 1):?>
+            if (!empty($arResult["MORE_PHOTO"]) && is_array($arResult["MORE_PHOTO"])) :?>
 					<div class="wrapp_thumbs xzoom-thumbs">
-						<div class="thumbs flexslider" data-plugin-options='{"animation": "slide", "selector": ".slides_block > li", "directionNav": true, "itemMargin":10, "itemWidth": 54, "controlsContainer": ".thumbs_navigation", "controlNav" :false, "animationLoop": true, "slideshow": false}' style="max-width:<?=ceil(((count($arResult['MORE_PHOTO']) <= 4 ? count($arResult['MORE_PHOTO']) : 4) * 64) - 10)?>px;">
+                        <?php
+                        $maxPhotos = 4; // Максимальное количество фотографий для отображения
+                        $photoCount = is_array($arResult['MORE_PHOTO']) ? count($arResult['MORE_PHOTO']) : 0;
+                        $maxWidth = $photoCount <= $maxPhotos ? $photoCount : $maxPhotos;
+                        $maxWidthPx = ceil($maxWidth * 64) - 10; // Рассчитываем максимальную ширину в пикселях
+
+                        ?>
+                        <div class="thumbs flexslider"
+                             data-plugin-options='{"animation": "slide", "selector": ".slides_block > li", "directionNav": true, "itemMargin":10, "itemWidth": 54, "controlsContainer": ".thumbs_navigation", "controlNav" :false, "animationLoop": true, "slideshow": false}'
+                             style="max-width: <?= $maxWidthPx ?>px;">
 							<ul class="slides_block" id="thumbs">
 								<?foreach($arResult["MORE_PHOTO"]as $i => $arImage):?>
 									<li data-id="<?=$i?>" <?=(!$i ? 'class="current"' : '')?> data-big_img="<?=$arImage["BIG"]["src"]?>" data-small_img="<?=$arImage["SMALL"]["src"]?>">
@@ -450,8 +459,8 @@ setViewedProduct(<?=$arResult['ID']?>, <?=CUtil::PhpToJSObject($arViewedData, fa
 				<div class="prices_block">
 					<div class="cost prices clearfix">
 						<!-- OFFERS > 0 ? -->
-						<?if( count( $arResult["OFFERS"] ) > 0 ){
-							$minPrice = false;
+                        <?php if (is_array($arResult["OFFERS"]) && count($arResult["OFFERS"]) > 0) {
+                            $minPrice = false;
 							$min_price_id=0;
 							if (isset($arResult['MIN_PRICE']) || isset($arResult['RATIO_PRICE'])){
 								// $minPrice = (isset($arResult['RATIO_PRICE']) ? $arResult['RATIO_PRICE'] : $arResult['MIN_PRICE']);
@@ -602,7 +611,17 @@ setViewedProduct(<?=$arResult['ID']?>, <?=CUtil::PhpToJSObject($arViewedData, fa
 									<div class="title"><?=GetMessage("TITLE_QUANTITY_BLOCK");?></div>
 									<div class="values">
 										<span class="item">
-											<span class="value" <?=((count( $arResult["OFFERS"] ) > 0 && $arParams["TYPE_SKU"] == 'TYPE_1') ? 'style="opacity:0;"' : '')?>><?=$totalCount;?></span>
+<?php
+$offersCount = is_array($arResult["OFFERS"]) ? count($arResult["OFFERS"]) : 0;
+$typeSKU = isset($arParams["TYPE_SKU"]) ? $arParams["TYPE_SKU"] : '';
+
+$styleAttribute = '';
+if ($offersCount > 0 && $typeSKU == 'TYPE_1') {
+    $styleAttribute = 'style="opacity:0;"';
+}
+?>
+
+<span class="value" <?= $styleAttribute ?>><?= $totalCount ?></span>
 											<span class="text"><?=GetMessage("TITLE_QUANTITY");?></span>
 										</span>
 									</div>
@@ -683,7 +702,10 @@ setViewedProduct(<?=$arResult['ID']?>, <?=CUtil::PhpToJSObject($arViewedData, fa
 		<span itemprop="offers" itemscope itemtype="https://schema.org/AggregateOffer" style="display:none;">
 			<meta itemprop="lowPrice" content="<?=($arResult['MIN_PRICE']['DISCOUNT_VALUE'] ? $arResult['MIN_PRICE']['DISCOUNT_VALUE'] : $arResult['MIN_PRICE']['VALUE'] )?>" />
 		    <meta itemprop="priceCurrency" content="<?=$arResult['MIN_PRICE']['CURRENCY']?>" />
-		    <meta itemprop="offerCount" content="<?=count($arResult['OFFERS'])?>" />
+<?php
+$offersCount = is_array($arResult['OFFERS']) ? count($arResult['OFFERS']) : 0;
+?>
+<meta itemprop="offerCount" content="<?= $offersCount ?>" />
 			<?foreach($arResult['OFFERS'] as $arOffer):?>
 				<?$currentOffersList = array();?>
 				<?foreach($arOffer['TREE'] as $propName => $skuId):?>
@@ -720,8 +742,11 @@ setViewedProduct(<?=$arResult['ID']?>, <?=CUtil::PhpToJSObject($arViewedData, fa
 	<?if($arResult["TIZERS_ITEMS"]){?>
 		<div class="tizers_block_detail">
 			<div class="rows_block">
-				<?$count_t_items=count($arResult["TIZERS_ITEMS"]);?>
-				<?foreach($arResult["TIZERS_ITEMS"] as $arItem){?>
+                <?php
+                $count_t_items = is_array($arResult["TIZERS_ITEMS"]) ? count($arResult["TIZERS_ITEMS"]) : 0;
+                ?>
+
+                <?foreach($arResult["TIZERS_ITEMS"] as $arItem){?>
 					<div class="item_block tizer col-<?=$count_t_items;?>">
 						<div class="inner_wrapper">
 							<?if($arItem["UF_LINK"]){?>
@@ -882,11 +907,23 @@ foreach($arResult["VIDEOS"] as $v)
 				<span><?=GetMessage("OFFER_PRICES")?></span>
 			</li>
 		<?endif;?>
-		<?if($arResult["DETAIL_TEXT"] || count($arResult["STOCK"]) || count($arResult["SERVICES"]) || ((count($arResult["PROPERTIES"]["INSTRUCTIONS"]["VALUE"]) && is_array($arResult["PROPERTIES"]["INSTRUCTIONS"]["VALUE"])) || count($arResult["SECTION_FULL"]["UF_FILES"])) || ($showProps && $arParams["PROPERTIES_DISPLAY_LOCATION"] != "TAB")):?>
-			<li class="detail<?=(!($iTab++) ? ' current' : '')?>">
-				<span><?=GetMessage("DESCRIPTION_TAB")?></span>
-			</li>
-		<?endif;?>
+        <?php
+        $hasDetailText = !empty($arResult["DETAIL_TEXT"]);
+        $hasStock = !empty($arResult["STOCK"]);
+        $hasServices = !empty($arResult["SERVICES"]);
+        $hasInstructions = (isset($arResult["PROPERTIES"]["INSTRUCTIONS"]["VALUE"]) && is_array($arResult["PROPERTIES"]["INSTRUCTIONS"]["VALUE"]) && count($arResult["PROPERTIES"]["INSTRUCTIONS"]["VALUE"]) > 0);
+        $hasFiles = !empty($arResult["SECTION_FULL"]["UF_FILES"]);
+        $showProps = true; // Предположим, что это переменная, определяющая показ свойств
+        $propertiesDisplayLocation = isset($arParams["PROPERTIES_DISPLAY_LOCATION"]) ? $arParams["PROPERTIES_DISPLAY_LOCATION"] : '';
+
+        if ($hasDetailText || $hasStock || $hasServices || $hasInstructions || $hasFiles || ($showProps && $propertiesDisplayLocation != "TAB")):
+            ?>
+            <li class="detail<?= (!$iTab++ ? ' current' : '') ?>">
+                <span><?= GetMessage("DESCRIPTION_TAB") ?></span>
+            </li>
+        <?php endif; ?>
+
+
 		<?if($arParams["PROPERTIES_DISPLAY_LOCATION"] == "TAB" && $showProps):?>
 			<li class="props<?=(!($iTab++) ? ' current' : '')?>">
 				<span><?=GetMessage("PROPERTIES_TAB")?></span>
@@ -915,10 +952,12 @@ foreach($arResult["VIDEOS"] as $v)
 		<?if($arVideo):?>
 			<li class="video<?=(!($iTab++) ? ' current' : '')?>">
 				<span><?=GetMessage("VIDEO_TAB")?></span>
-				<?if(count($arVideo) > 1 && false):?>
-					<span class="count empty">&nbsp;(<?=count($arVideo)?>)</span>
-				<?endif;?>
-			</li>
+                <?php if (is_array($arVideo) && count($arVideo) > 1): ?>
+                    <span class="count empty">&nbsp;(<?= count($arVideo) ?>)</span>
+                <?php endif; ?>
+
+
+            </li>
 	<?endif;?>
 	</ul>
 	<?if($arResult["OFFERS"] && $arParams["TYPE_SKU"] !== "TYPE_1"):?>
@@ -985,7 +1024,12 @@ foreach($arResult["VIDEOS"] as $v)
 						</tr>
 					</thead>
 					<tbody>
-						<?$numProps = count($arResult["SKU_PROPERTIES"]);
+                    <?php
+                    $numProps = 0;
+                    if (is_array($arResult["SKU_PROPERTIES"])) {
+                        $numProps = count($arResult["SKU_PROPERTIES"]);
+                    }
+
 						if($arResult["OFFERS"]){
 							foreach ($arResult["OFFERS"] as $key => $arSKU){?>
 								<?
@@ -1134,7 +1178,12 @@ foreach($arResult["VIDEOS"] as $v)
 												<?endif;?>
 												<div class="wrap_md">
 													<?if($arskuAddToBasketData["ACTION"] == "ADD"):?>
-														<?if($arskuAddToBasketData["OPTIONS"]["USE_PRODUCT_QUANTITY_DETAIL"] && !count($arSKU["OFFERS"]) && $arskuAddToBasketData["ACTION"] == "ADD" && $arSKU["CAN_BUY"]):?>
+                                                        <?php if (
+                                                            $arskuAddToBasketData["OPTIONS"]["USE_PRODUCT_QUANTITY_DETAIL"]
+                                                            && is_array($arSKU["OFFERS"]) && count($arSKU["OFFERS"]) == 0
+                                                            && $arskuAddToBasketData["ACTION"] == "ADD"
+                                                            && $arSKU["CAN_BUY"]
+                                                        ): ?>
 															<div class="counter_block_wr iblock ablock">
 																<div class="counter_block" data-item="<?=$arSKU["ID"];?>">
 																	<span class="minus">-</span>
@@ -1187,7 +1236,12 @@ foreach($arResult["VIDEOS"] as $v)
 											</td>
 										<?endif;?>
 										<?if($arskuAddToBasketData["ACTION"] == "ADD"):?>
-											<?if($arskuAddToBasketData["OPTIONS"]["USE_PRODUCT_QUANTITY_DETAIL"] && !count($arSKU["OFFERS"]) && $arskuAddToBasketData["ACTION"] == "ADD" && $arSKU["CAN_BUY"]):?>
+                                            <?php if (
+                                                $arskuAddToBasketData["OPTIONS"]["USE_PRODUCT_QUANTITY_DETAIL"]
+                                                && (!is_array($arSKU["OFFERS"]) || count($arSKU["OFFERS"]) == 0)
+                                                && $arskuAddToBasketData["ACTION"] == "ADD"
+                                                && $arSKU["CAN_BUY"]
+                                            ): ?>
 												<td class="counter_block_wr">
 													<div class="counter_block" data-item="<?=$arSKU["ID"];?>">
 														<?$collspan++;?>
@@ -1249,7 +1303,24 @@ foreach($arResult["VIDEOS"] as $v)
 				</table>
 			</li>
 		<?endif;?>
-		<?if($arResult["DETAIL_TEXT"] || count($arResult["STOCK"]) || count($arResult["SERVICES"]) || ((count($arResult["PROPERTIES"]["INSTRUCTIONS"]["VALUE"]) && is_array($arResult["PROPERTIES"]["INSTRUCTIONS"]["VALUE"])) || count($arResult["SECTION_FULL"]["UF_FILES"])) || ($showProps && $arParams["PROPERTIES_DISPLAY_LOCATION"] != "TAB")):?>
+        <?php
+        $hasDetailText = !empty($arResult["DETAIL_TEXT"]);
+        $hasStock = is_array($arResult["STOCK"]) && count($arResult["STOCK"]) > 0;
+        $hasServices = is_array($arResult["SERVICES"]) && count($arResult["SERVICES"]) > 0;
+        $hasInstructions = is_array($arResult["PROPERTIES"]["INSTRUCTIONS"]["VALUE"]) && count($arResult["PROPERTIES"]["INSTRUCTIONS"]["VALUE"]) > 0;
+        $hasFiles = is_array($arResult["SECTION_FULL"]["UF_FILES"]) && count($arResult["SECTION_FULL"]["UF_FILES"]) > 0;
+        $showProps = true; // Предположим, что это переменная, определяющая показ свойств
+        $propertiesDisplayLocation = isset($arParams["PROPERTIES_DISPLAY_LOCATION"]) ? $arParams["PROPERTIES_DISPLAY_LOCATION"] : '';
+
+        if (
+            $hasDetailText
+            || $hasStock
+            || $hasServices
+            || $hasInstructions
+            || $hasFiles
+            || ($showProps && $propertiesDisplayLocation != "TAB")
+        ):
+            ?>
 			<li class="<?=(!($iTab++) ? ' current' : '')?>">
 				<?if(strlen($arResult["DETAIL_TEXT"])):?>
 					<div class="detail_text"><?=$arResult["DETAIL_TEXT"]?></div>
@@ -1270,12 +1341,13 @@ foreach($arResult["VIDEOS"] as $v)
 													<span <?if($arProp["HINT"] && $arParams["SHOW_HINTS"] == "Y"){?>class="whint"<?}?>><?if($arProp["HINT"] && $arParams["SHOW_HINTS"] == "Y"):?><div class="hint"><span class="icon"><i>?</i></span><div class="tooltip"><?=$arProp["HINT"]?></div></div><?endif;?><span itemprop="name"><?=$arProp["NAME"]?></span></span>
 												</div>
 												<div class="char_value" itemprop="value">
-													<?if(count($arProp["DISPLAY_VALUE"]) > 1):?>
-														<?=implode(', ', $arProp["DISPLAY_VALUE"]);?>
-													<?else:?>
-														<?=$arProp["DISPLAY_VALUE"];?>
-													<?endif;?>
-												</div>
+                                                    <?php if (is_array($arProp["DISPLAY_VALUE"]) && count($arProp["DISPLAY_VALUE"]) > 1): ?>
+                                                        <?= implode(', ', $arProp["DISPLAY_VALUE"]); ?>
+                                                    <?php else: ?>
+                                                        <?= $arProp["DISPLAY_VALUE"]; ?>
+                                                    <?php endif; ?>
+
+                                                </div>
 											</div>
 										<?endif;?>
 									<?endif;?>
@@ -1295,11 +1367,11 @@ foreach($arResult["VIDEOS"] as $v)
 												</td>
 												<td class="char_value">
 													<span itemprop="value">
-														<?if(count($arProp["DISPLAY_VALUE"]) > 1):?>
-															<?=implode(', ', $arProp["DISPLAY_VALUE"]);?>
-														<?else:?>
-															<?=$arProp["DISPLAY_VALUE"];?>
-														<?endif;?>
+														<?php if (is_array($arProp["DISPLAY_VALUE"]) && count($arProp["DISPLAY_VALUE"]) > 1): ?>
+                                                            <?= implode(', ', $arProp["DISPLAY_VALUE"]); ?>
+                                                        <?php else: ?>
+                                                            <?= $arProp["DISPLAY_VALUE"]; ?>
+                                                        <?php endif; ?>
 													</span>
 												</td>
 											</tr>
@@ -1390,12 +1462,12 @@ foreach($arResult["VIDEOS"] as $v)
 												<span <?if($arProp["HINT"] && $arParams["SHOW_HINTS"] == "Y"){?>class="whint"<?}?>><?if($arProp["HINT"] && $arParams["SHOW_HINTS"] == "Y"):?><div class="hint"><span class="icon"><i>?</i></span><div class="tooltip"><?=$arProp["HINT"]?></div></div><?endif;?><span itemprop="name"><?=$arProp["NAME"]?></span></span>
 											</div>
 											<div class="char_value" itemprop="value">
-												<?if(count($arProp["DISPLAY_VALUE"]) > 1):?>
-													<?=implode(', ', $arProp["DISPLAY_VALUE"]);?>
-												<?else:?>
-													<?=$arProp["DISPLAY_VALUE"];?>
-												<?endif;?>
-											</div>
+                                                <?php if (is_array($arProp["DISPLAY_VALUE"]) && count($arProp["DISPLAY_VALUE"]) > 1): ?>
+                                                    <?= implode(', ', $arProp["DISPLAY_VALUE"]); ?>
+                                                <?php else: ?>
+                                                    <?= $arProp["DISPLAY_VALUE"]; ?>
+                                                <?php endif; ?>
+                                            </div>
 										</div>
 									<?endif;?>
 								<?endif;?>
@@ -1485,7 +1557,7 @@ foreach($arResult["VIDEOS"] as $v)
 		<?if($arVideo):?>
 			<li class="<?=(!($iTab++) ? ' current' : '')?>">
 				<div class="video_block">
-					<?if(count($arVideo) > 1):?>
+                    <?php if (is_array($arVideo) && count($arVideo) > 1): ?>
 						<table class="video_table">
 							<tbody>
 								<?foreach($arVideo as $v => $value):?>
