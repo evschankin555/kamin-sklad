@@ -58,7 +58,7 @@ Loc::loadMessages(__FILE__);
  * @package Bitrix\Iblock
  **/
 
-class ElementTable extends ORM\Data\DataManager
+class Element extends ORM\Data\DataManager
 {
 	const TYPE_TEXT = 'text';
 	const TYPE_HTML = 'html';

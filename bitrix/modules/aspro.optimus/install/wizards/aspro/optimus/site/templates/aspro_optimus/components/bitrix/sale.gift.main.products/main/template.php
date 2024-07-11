@@ -128,6 +128,7 @@ $signedTemplate = $signer->sign($arResult['RCM_TEMPLATE'], 'bx.sale.gift.main.pr
 		?>
 	</div>
 </div>
+<script src="/bitrix/templates/aspro_optimus/components/bitrix/sale.gift.main.products/main/script.js"></script>
 <script type="text/javascript">
 BX(function () {
 	BX.Sale['GiftMainProductsClass_<?= $component->getComponentId() ?>'] = new BX.Sale.GiftMainProductsClass({

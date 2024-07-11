@@ -77,37 +77,67 @@ function fn_getLocationDataByCookie(){
 	}
 }
 
-function fn_changeLocation(){
+function fn_changeLocation() {
 	$new_location = intval($_REQUEST['changeloc']);
-	//Debug::writeToFile($APPLICATION->sDirPath, 'new_location', $APPLICATION->sDirPath.'debug.txt'); 
-	if ($new_location>0){
-        if( in_array(1,CUser::GetUserGroup(CUser::GetID()))||in_array(10,CUser::GetUserGroup(CUser::GetID())))
-        {
-    		if ($new_location!=$_SESSION['CURRENT_LOCATION']['CURRENT']['ID']){
-    			foreach ($_SESSION['CURRENT_LOCATION']['LOCATIONS'] as $key => $arLocation){
-    				if ($new_location==$arLocation['ID']){
-    					$_SESSION['CURRENT_LOCATION']['CURRENT']=$arLocation;
-    					$_SESSION['CURRENT_LOCATION']['CURRENT2']=$arLocation;
-    					$_SESSION['CURRENT_LOCATION']['CURRENT']['APPROVE']='Y';
-    					$_SESSION["OFFICE"]["ID"]=0;				
-    					
-    					setcookie("CURRENT_LOCATION_ID","0",time()-1, "/");					
-    					
-    					setcookie("CURRENT_LOCATION_ID",$_SESSION['CURRENT_LOCATION']['CURRENT']['ID'],time()+86000,"/");	
 
-    					$arrCityLocationFilter=array('LOGIC'=>'OR', 
-    									array('PROPERTY_CITY'=>false), 
-    									array('PROPERTY_CITY'=>$_SESSION['CURRENT_LOCATION']['CURRENT']['ID'])
-    					);		
-    					$_SESSION['CURRENT_LOCATION']['CURRENT']['FILTER']=$arrCityLocationFilter;					
-    				}
-    			}
-    		}
-        }
-	}	else{
+	if ($new_location > 0) {
+		// Создаем экземпляр класса CUser
+		$user = new CUser;
+
+		// Проверяем, что пользователь либо авторизован, либо не авторизован (для неавторизованных остальные проверки не нужны)
+		if ($user->GetID() || !empty($_SESSION['CURRENT_LOCATION']['CURRENT'])) {
+			// Если пользователь авторизован и принадлежит к нужным группам
+			if ($user->GetID() && (in_array(1, $user->GetUserGroup($user->GetID())) || in_array(10, $user->GetUserGroup($user->GetID())))) {
+				// Проверяем, нужно ли изменять текущее местоположение
+				if ($new_location != $_SESSION['CURRENT_LOCATION']['CURRENT']['ID']) {
+					foreach ($_SESSION['CURRENT_LOCATION']['LOCATIONS'] as $key => $arLocation) {
+						if ($new_location == $arLocation['ID']) {
+							$_SESSION['CURRENT_LOCATION']['CURRENT'] = $arLocation;
+							$_SESSION['CURRENT_LOCATION']['CURRENT2'] = $arLocation;
+							$_SESSION['CURRENT_LOCATION']['CURRENT']['APPROVE'] = 'Y';
+							$_SESSION["OFFICE"]["ID"] = 0;
+
+							setcookie("CURRENT_LOCATION_ID", "0", time() - 1, "/");
+							setcookie("CURRENT_LOCATION_ID", $_SESSION['CURRENT_LOCATION']['CURRENT']['ID'], time() + 86000, "/");
+
+							$arrCityLocationFilter = array(
+								'LOGIC' => 'OR',
+								array('PROPERTY_CITY' => false),
+								array('PROPERTY_CITY' => $_SESSION['CURRENT_LOCATION']['CURRENT']['ID'])
+							);
+							$_SESSION['CURRENT_LOCATION']['CURRENT']['FILTER'] = $arrCityLocationFilter;
+						}
+					}
+				}
+			} else {
+				// Если пользователь не авторизован, но текущее местоположение установлено, меняем его
+				foreach ($_SESSION['CURRENT_LOCATION']['LOCATIONS'] as $key => $arLocation) {
+					if ($new_location == $arLocation['ID']) {
+						$_SESSION['CURRENT_LOCATION']['CURRENT'] = $arLocation;
+						$_SESSION['CURRENT_LOCATION']['CURRENT2'] = $arLocation;
+						$_SESSION['CURRENT_LOCATION']['CURRENT']['APPROVE'] = 'Y';
+						$_SESSION["OFFICE"]["ID"] = 0;
+
+						setcookie("CURRENT_LOCATION_ID", "0", time() - 1, "/");
+						setcookie("CURRENT_LOCATION_ID", $_SESSION['CURRENT_LOCATION']['CURRENT']['ID'], time() + 86000, "/");
+
+						$arrCityLocationFilter = array(
+							'LOGIC' => 'OR',
+							array('PROPERTY_CITY' => false),
+							array('PROPERTY_CITY' => $_SESSION['CURRENT_LOCATION']['CURRENT']['ID'])
+						);
+						$_SESSION['CURRENT_LOCATION']['CURRENT']['FILTER'] = $arrCityLocationFilter;
+					}
+				}
+			}
+		}
+	} else {
+		// Если новое местоположение не передано, вызываем функцию fn_getLocationDataByCookie()
 		fn_getLocationDataByCookie();
 	}
 }
+
+
 
 fn_changeLocation();
 

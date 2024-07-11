@@ -1,6 +1,6 @@
 <?if(!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED!==true)die();?>
 <?$this->setFrameMode(true);?>
-<?if( count( $arResult["ITEMS"] ) >= 1 ){?>
+<?php if (is_array($arResult["ITEMS"]) && count($arResult["ITEMS"]) >= 1){ ?>
 	<?if(($arParams["AJAX_REQUEST"]=="N") || !isset($arParams["AJAX_REQUEST"])){?>
 		<div class="top_wrapper rows_block <?=($arParams["SHOW_UNABLE_SKU_PROPS"] != "N" ? "show_un_props" : "unshow_un_props");?>">
 			<div class="catalog_block items block_list">
@@ -283,7 +283,9 @@
 												<div class="title"><?=GetMessage("TITLE_QUANTITY_BLOCK");?></div>
 												<div class="values">
 													<span class="item">
-														<span class="value" <?=((count( $arItem["OFFERS"] ) > 0 && $arParams["TYPE_SKU"] == 'TYPE_1') ? 'style="opacity:0;"' : '')?>><?=$totalCount;?></span>
+<span class="value" <?= ((is_array($arItem["OFFERS"]) && count($arItem["OFFERS"]) > 0 && $arParams["TYPE_SKU"] == 'TYPE_1') ? 'style="opacity:0;"' : '') ?>>
+    <?= $totalCount; ?>
+</span>
 														<span class="text"><?=GetMessage("TITLE_QUANTITY");?></span>
 													</span>
 												</div>

@@ -162,10 +162,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 										global $USER;
 										if ($USER->IsAdmin() || in_array(10, $USER->GetUserGroupArray())) {
 										?>
-										                                    <a href="#" class="changeCity"><?=$_SESSION['CURRENT_LOCATION']['CURRENT']["NAME"]?><i class="fa fa-chevron-down" aria-hidden="true"></i></a>
-										<? } else { ?>
-																			<span class="changeCity2"><?=$_SESSION['CURRENT_LOCATION']['CURRENT']["NAME"]?></span>
-										<? } ?>
+										                                    <a href="#" class="changeCity">
+                                                                                <?=$_SESSION['CURRENT_LOCATION']['CURRENT']["NAME"]?>
+                                                                                <i class="fa fa-chevron-down" aria-hidden="true"></i></a>
+										<? } else {
+                                            /*	<span class="changeCity2"><?=$_SESSION['CURRENT_LOCATION']['CURRENT']["NAME"]?></span>*/
+                                            ?>
+                                            <a href="#" class="changeCity"><?=$_SESSION['CURRENT_LOCATION']['CURRENT']["NAME"]?>
+                                                <i class="fa fa-chevron-down" aria-hidden="true"></i></a>
+
+                                        <? } ?>
 										</div>
 
 								</td>
@@ -178,8 +184,11 @@ global $USER;
 if ($USER->IsAdmin() || in_array(10, $USER->GetUserGroupArray())) {
 ?>
                                     <a href="#" class="changeCity"><?=$_SESSION['CURRENT_LOCATION']['CURRENT']["NAME"]?><i class="fa fa-chevron-down" aria-hidden="true"></i></a>
-<? } else { ?>
-									<span class="changeCity2"><?=$_SESSION['CURRENT_LOCATION']['CURRENT']["NAME"]?></span>
+<? } else {
+   /* <span class="changeCity2"><?=$_SESSION['CURRENT_LOCATION']['CURRENT']["NAME"]?></span>*/
+    ?>
+    <a href="#" class="changeCity"><?=$_SESSION['CURRENT_LOCATION']['CURRENT']["NAME"]?><i class="fa fa-chevron-down" aria-hidden="true"></i></a>
+
 <? } ?>
 </div>
 <div class="search">
