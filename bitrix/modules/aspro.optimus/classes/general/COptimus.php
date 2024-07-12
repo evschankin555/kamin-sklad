@@ -2810,13 +2810,19 @@ class COptimus{
 				$FORMS_GOALS_LIST = '';
 				if(CModule::IncludeModule('form')){
 					if($siteID){
-						if($arForms = COptimusCache::CForm_GetList($by = array('by' => 's_id', 'CACHE' => array('TAG' => 'forms')), $order = 'asc', array('SITE' => $siteID, 'SITE_EXACT_MATCH' => 'Y'), $is_filtered)
-						){
-							foreach($arForms as $arForm){
-								$FORMS_GOALS_LIST .= $arForm['NAME'].' - <i>goal_webform_success_'.$arForm['ID'].'</i><br />';
-							}
-						}
-					}
+                        $by = array('by' => 's_id', 'CACHE' => array('TAG' => 'forms'));
+                        $order = 'asc';
+                        $arFilter = array('SITE' => $siteID, 'SITE_EXACT_MATCH' => 'Y');
+                        $is_filtered = false; // или соответствующее значение, если требуется
+
+                        if ($arForms = COptimusCache::CForm_GetList($by, $order, $arFilter, $is_filtered)) {
+                            $FORMS_GOALS_LIST = ''; // инициализация переменной
+                            foreach ($arForms as $arForm) {
+                                $FORMS_GOALS_LIST .= $arForm['NAME'] . ' - <i>goal_webform_success_' . $arForm['ID'] . '</i><br />';
+                            }
+                        }
+
+                    }
 				}
 
 				$Option['note'] = str_replace('#FORMS_GOALS_LIST#', $FORMS_GOALS_LIST, $Option['note']);

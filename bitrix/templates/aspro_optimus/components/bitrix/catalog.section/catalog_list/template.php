@@ -201,11 +201,11 @@
 						<div class="information">
 							<div class="cost prices clearfix">
 							<?if(!$arItem["PROPERTIES"]["DISCONTINUED"]["VALUE"]){?>
-								<?if( count( $arItem["OFFERS"] ) > 0 ){
+								<?if(is_array($arItem["OFFERS"]) && count($arItem["OFFERS"]) > 0 ){
 									$minPrice = false;
 									$min_price_id=0;
 									if (isset($arItem['MIN_PRICE']) || isset($arItem['RATIO_PRICE'])){
-										// $minPrice = (isset($arItem['RATIO_PRICE']) ? $arItem['RATIO_PRICE'] : $arItem['MIN_PRICE']);
+										 //$minPrice = (isset($arItem['RATIO_PRICE']) ? $arItem['RATIO_PRICE'] : $arItem['MIN_PRICE']);
 										$minPrice = $arItem['MIN_PRICE'];
 									}
 									$offer_id=0;
@@ -231,14 +231,7 @@
 										<div class="price discount" id="<? echo $arItemIDs["ALL_ITEM_IDS"]['PRICE_OLD']; ?>" <?=(!$minPrice["DISCOUNT_DIFF"] ? 'style="display:none;"' : '')?>>
 											<span <?=(!$minPrice["DISCOUNT_DIFF"] ? 'style="display:none;"' : '')?>><?=$minPrice["PRINT_VALUE"];?></span>
 										</div>
-										<?/*if($arParams["SHOW_DISCOUNT_PERCENT"]=="Y"){?>
-											<div class="sale_block" <?=(!$minPrice["DISCOUNT_DIFF"] ? 'style="display:none;"' : '')?>>
-												<?$percent=round(($minPrice["DISCOUNT_DIFF"]/$minPrice["VALUE"])*100, 2);?>
-												<div class="value">-<?=$percent;?>%</div>
-												<div class="text"><?=GetMessage("CATALOG_ECONOMY");?> <span><?=$minPrice["PRINT_DISCOUNT_DIFF"];?></span></div>
-												<div class="clearfix"></div>
-											</div>
-										<?}*/?>
+
 									<?}else{?>
 										<div class="price" id="<? echo $arItemIDs["ALL_ITEM_IDS"]['PRICE']; ?>">
 											<?if(strlen($minPrice["PRINT_DISCOUNT_VALUE"])):?>
@@ -250,7 +243,11 @@
 									<?
 									$arCountPricesCanAccess = 0;
 									$min_price_id=0;
-									foreach( $arItem["PRICES"] as $key => $arPrice ) { if($arPrice["CAN_ACCESS"]){$arCountPricesCanAccess++;} }
+									foreach( $arItem["PRICES"] as $key => $arPrice ) {
+                                        if($arPrice["CAN_ACCESS"] ){
+                                            $arCountPricesCanAccess++;
+                                        }
+                                    }
 									?>
 									<?foreach($arItem["PRICES"] as $key => $arPrice){?>
 										<?if($arPrice["CAN_ACCESS"]){
@@ -335,7 +332,7 @@
 									</div>
 								<?}?>
 							<?}?>
-							<?if($arItem["OFFERS"]){?>
+							<?if(is_array($arItem["OFFERS"]) && count($arItem["OFFERS"]) > 0 ){?>
 								<?if(!empty($arItem['OFFERS_PROP'])){?>
 									<div class="sku_props">
 										<div class="bx_catalog_item_scu wrapper_sku" id="<? echo $arItemIDs["ALL_ITEM_IDS"]['PROP_DIV']; ?>">
@@ -365,6 +362,7 @@
 								}
 								$arItem["EMPTY_PROPS_JS"]="Y";
 								$emptyProductProperties = empty($arItem['PRODUCT_PROPERTIES']);
+
 								if (!$emptyProductProperties){
 									$arItem["EMPTY_PROPS_JS"]="N";?>
 									<div class="wrapper">
