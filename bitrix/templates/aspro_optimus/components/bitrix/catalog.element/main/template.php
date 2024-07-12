@@ -1,4 +1,6 @@
-<?if(!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED!==true)die();?>
+<?if(!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED!==true)die();
+ini_set('display_errors', 1);
+?>
 
 <?if($arResult["ISHIDEDISCOUNT"]){?>
 <input type="hidden" id="ISHIDEDISCOUNT" value="1" />
@@ -89,7 +91,7 @@ $optimusInstance = new COptimus();
 $arSkuTemplate = array();
 if (!empty($arResult['SKU_PROPS'])) {
     // Вызываем метод через объект
-    $arSkuTemplate = $optimusInstance->GetSKUPropsArray($arResult['SKU_PROPS'], $arResult["SKU_IBLOCK_ID"], "list", $arParams["OFFER_HIDE_NAME_PROPS"]);
+    $arSkuTemplate = COptimus::GetSKUPropsArray($arResult['SKU_PROPS'], $arResult["SKU_IBLOCK_ID"], "list", $arParams["OFFER_HIDE_NAME_PROPS"]);
 }
 
 $strMainID = $this->GetEditAreaId($arResult['ID']);
@@ -97,13 +99,13 @@ $strObName = 'ob'.preg_replace("/[^a-zA-Z0-9_]/", "x", $strMainID);
 $arResult["strMainID"] = $this->GetEditAreaId($arResult['ID']);
 
 // Вызываем метод через объект
-$arItemIDs = $optimusInstance->GetItemsIDs($arResult, "Y");
+$arItemIDs = COptimus::GetItemsIDs($arResult, "Y");
 
 // Вызываем метод через объект
-$totalCount = $optimusInstance->GetTotalCount($arResult);
+$totalCount = COptimus::GetTotalCount($arResult);
 
 // Вызываем метод через объект
-$arQuantityData = $optimusInstance->GetQuantityArray($totalCount, $arItemIDs["ALL_ITEM_IDS"], "Y");
+$arQuantityData = COptimus::GetQuantityArray($totalCount, $arItemIDs["ALL_ITEM_IDS"], "Y");
 
 $arParams["BASKET_ITEMS"] = ($arParams["BASKET_ITEMS"] ? $arParams["BASKET_ITEMS"] : array());
 $useStores = $arParams["USE_STORE"] == "Y" && $arResult["STORES_COUNT"] && $arQuantityData["RIGHTS"]["SHOW_QUANTITY"];
@@ -126,7 +128,7 @@ if ($arResult["OFFERS"]) {
         $strMeasure = $arMeasure["SYMBOL_RUS"];
     }
     // Вызываем метод через объект
-    $arAddToBasketData = $optimusInstance->GetAddToBasketArray($arResult, $totalCount, $arParams["DEFAULT_COUNT"], $arParams["BASKET_URL"], false, $arItemIDs["ALL_ITEM_IDS"], 'big_btn w_icons', $arParams);
+    $arAddToBasketData = COptimus::GetAddToBasketArray($arResult, $totalCount, $arParams["DEFAULT_COUNT"], $arParams["BASKET_URL"], false, $arItemIDs["ALL_ITEM_IDS"], 'big_btn w_icons', $arParams);
 }
 
 $arOfferProps = implode(';', $arParams['OFFERS_CART_PROPERTIES']);
@@ -165,12 +167,12 @@ setViewedProduct(<?=$arResult['ID']?>, <?=CUtil::PhpToJSObject($arViewedData, fa
 			<?}?>
 			<?if($arParams["SALE_STIKER"] && $arItem["PROPERTIES"][$arParams["SALE_STIKER"]]["VALUE"]){?>
 										<?$percent=round(($minPrice["DISCOUNT_DIFF"]/$minPrice["VALUE"])*100, 2);?>
-													
+
 										<div><div class="sticker_sale_text">-<?=$percent;?>%</div></div>
 									<?}?>
 			<?if($arResult["PRICES"]['BASE']['DISCOUNT_DIFF_PERCENT'] > 0){?>
 				<?$percent=$arResult["PRICES"]['BASE']['DISCOUNT_DIFF_PERCENT'];?>
-							
+
 				<div><div class="sticker_sale_text">-<?=$percent;?>%</div></div>
 			<?}?>
 		</div>
@@ -345,7 +347,7 @@ setViewedProduct(<?=$arResult['ID']?>, <?=CUtil::PhpToJSObject($arViewedData, fa
 						}?>
 						<div class="item_block col-6">
 						<?if($arParams["SHOW_RATING"] == "Y"):?>
-							
+
 								<?$frame = $this->createFrame('dv_'.$arResult["ID"])->begin('');?>
 									<div class="rating">
 										<?$APPLICATION->IncludeComponent(
@@ -365,42 +367,42 @@ setViewedProduct(<?=$arResult['ID']?>, <?=CUtil::PhpToJSObject($arViewedData, fa
 										);?>
 									</div>
 								<?$frame->end();?>
-							<?endif;?>	
+							<?endif;?>
 							<div class="props">
-							
+
 							<?if($isArticle):?>
-							
+
 								<div class="props__item article iblock" itemprop="additionalProperty" itemscope itemtype="httpss://schema.org/PropertyValue" <?if($arResult['SHOW_OFFERS_PROPS']){?>id="<? echo $arItemIDs["ALL_ITEM_IDS"]['DISPLAY_PROP_ARTICLE_DIV'] ?>" style="display: none;"<?}?>>
 									<span class="block_title" itemprop="name"><?=GetMessage("ARTICLE");?>: </span>
 									<span class="value" itemprop="value"><?=$arResult["DISPLAY_PROPERTIES"]["CML2_ARTICLE"]["VALUE"]?></span>
 								</div>
 							<?endif;?>
-						
-						<div class="props__item brand">									
+
+						<div class="props__item brand">
 										<span class="block_title">Бренд: </span>
-										<a href="/brands/<?=$arResult["BRAND_ITEM"]["CODE"]?>/"><?=$arResult["BRAND_ITEM"]["NAME"]?><img src="<?=$arResult["BRAND_ITEM"]["FLAG"]?>" alt=""></a> 
-									
+										<a href="/brands/<?=$arResult["BRAND_ITEM"]["CODE"]?>/"><?=$arResult["BRAND_ITEM"]["NAME"]?><img src="<?=$arResult["BRAND_ITEM"]["FLAG"]?>" alt=""></a>
+
 								</div>
                                 <? if (strlen($arResult["PROPERTIES"]["PROP_7"]["VALUE"])>0) { ?>
 								<div class="props__item power">
 										<span class="block_title">Мощность: </span>
 										<span class="value"><?=$arResult["PROPERTIES"]["PROP_3"]["VALUE"]?> (кВт)</span>
 								</div>
-                                <? } ?>						
+                                <? } ?>
 						</div>
 						</div>
-						
 
-						
+
+
 							<div class="item_block col-6">
-							<div class="rating"></div> 
+							<div class="rating"></div>
 									<div class="props">
 	                                    <? if (strlen($arResult["PROPERTIES"]["PROP_7"]["VALUE"])>0) { ?>
 										<div class="props__item ">
 											<span class="block_title">Диаметр дымохода: </span>
 											<span class="value"><?=$arResult["PROPERTIES"]["PROP_7"]["VALUE"]?> (мм)</span>
 										</div>
-                                        <? } ?>                                        
+                                        <? } ?>
                                         <? if (strlen($arResult["PROPERTIES"]["PROP_8"]["VALUE"])>0) { ?>
 										<div class="props__item ">
 											<span class="block_title">Вес: </span>
@@ -411,21 +413,21 @@ setViewedProduct(<?=$arResult['ID']?>, <?=CUtil::PhpToJSObject($arViewedData, fa
                                 foreach($arResult["MORE_PHOTO"]as $i => $arImage):
                                     if (strpos($arImage["ALT"],"Чертеж")!==false)
                                     {
-?>										
+?>
 										<div class="props__item cherteg">
 											<a href="<?=$arImage["BIG"]["src"]?>" class="fancy">Чертеж</a>
-										</div>	
-<?                                        										
+										</div>
+<?
                                     }
-								endforeach;?>								
+								endforeach;?>
 									</div>
 							</div>
-						
+
 					</div>
-		
+
 					<div class="rows_block">
                         <?if($arResult["OFFERS"] && $showCustomOffer){?>
-						<div class="item_block col-12">                    
+						<div class="item_block col-12">
                             <div class="sku_props">
                                 <?if (!empty($arResult['OFFERS_PROP'])){?>
                                     <div class="bx_catalog_item_scu wrapper_sku" id="<? echo $arItemIDs["ALL_ITEM_IDS"]['PROP_DIV']; ?>">
@@ -436,17 +438,17 @@ setViewedProduct(<?=$arResult['ID']?>, <?=CUtil::PhpToJSObject($arViewedData, fa
                                         }?>
                                     </div>
                                 <?}?>
-                                <?$arItemJSParams=$optimusInstance->GetSKUJSParams($arResult, $arParams, $arResult, "Y");?>
+                                <?$arItemJSParams=COptimus::GetSKUJSParams($arResult, $arParams, $arResult, "Y");?>
                                 <script type="text/javascript">
                                     var <? echo $arItemIDs["strObName"]; ?> = new JCCatalogElement(<? echo CUtil::PhpToJSObject($arItemJSParams, false, true); ?>);
                                 </script>
                             </div>
-                        </div>       
-                        <?}?>                                     
-					</div>		
-   		
+                        </div>
+                        <?}?>
+					</div>
+
 					<div class="dop__komplekt"></div>
-   
+
 					<?if(strlen($arResult["PREVIEW_TEXT"])):?>
 						<div class="preview_text dotdot"><?=$arResult["PREVIEW_TEXT"]?></div>
 						<?if(strlen($arResult["DETAIL_TEXT"])):?>
@@ -459,7 +461,8 @@ setViewedProduct(<?=$arResult['ID']?>, <?=CUtil::PhpToJSObject($arViewedData, fa
 				<div class="prices_block">
 					<div class="cost prices clearfix">
 						<!-- OFFERS > 0 ? -->
-                        <?php if (is_array($arResult["OFFERS"]) && count($arResult["OFFERS"]) > 0) {
+                        <?php
+                        if (is_array($arResult["OFFERS"]) && count($arResult["OFFERS"]) > 0) {
                             $minPrice = false;
 							$min_price_id=0;
 							if (isset($arResult['MIN_PRICE']) || isset($arResult['RATIO_PRICE'])){
@@ -534,7 +537,8 @@ setViewedProduct(<?=$arResult['ID']?>, <?=CUtil::PhpToJSObject($arViewedData, fa
 
 
 
-									<?$price = CPrice::GetByID($arPrice["ID"]);?>
+									<?
+                                    $price = CPrice::GetByID($arPrice["ID"]);?>
 									<?if($arCountPricesCanAccess > 1 && false):?>
 										<div class="price_name"><?=$price["CATALOG_GROUP_NAME"];?></div>
 									<?endif;?>
@@ -549,16 +553,16 @@ setViewedProduct(<?=$arResult['ID']?>, <?=CUtil::PhpToJSObject($arViewedData, fa
 												<?=$arPrice["PRINT_DISCOUNT_VALUE"];?><?if (($arParams["SHOW_MEASURE"]=="Y") && $strMeasure):?><span class="price_measure">/<?=$strMeasure?></span><?endif;?>
 											<?endif;?>
 										</div>
-<?if(!$arResult["ISHIDEDISCOUNT"]){?>                                        
+                                        <?if(!$arResult["ISHIDEDISCOUNT"]){?>
 										<div class="vigod">
                                             <div class="price price2 discount" data-price="<?=$arPrice['VALUE'];?>">
                                                 <span><?=$arPrice["PRINT_VALUE"];?></span>
                                             </div>
-                                       
+
 											<!-- <br>Выгода:  -->
                                             <? //print_r($arPrice["PRINT_DISCOUNT_DIFF"]);?>
 										</div><br>
-<? } ?>
+                                        <? } ?>
 										<?//if($arParams["SHOW_DISCOUNT_PERCENT"]=="Y"){?>
 											<div class="sale_block">
 												<?$percent=round(($arPrice["DISCOUNT_DIFF"]/$arPrice["VALUE"])*100, 2);?>
@@ -594,7 +598,7 @@ setViewedProduct(<?=$arResult['ID']?>, <?=CUtil::PhpToJSObject($arViewedData, fa
                             {
                                 $arDiscountsMy[$v["PRIORITY"]]=$v;
                             }
-                            krsort($arDiscountsMy);       
+                            krsort($arDiscountsMy);
 
 						$arDiscount=array();
 						if($arDiscountsMy)
@@ -836,7 +840,7 @@ $offersCount = is_array($arResult['OFFERS']) ? count($arResult['OFFERS']) : 0;
 			</ul>
 		</div>
 	<?endif;?>
-    
+
 <div class="contmy"></div>
 </div>
 
@@ -1039,11 +1043,11 @@ foreach($arResult["VIDEOS"] as $v)
 								else{
 									$sMeasure = GetMessage("MEASURE_DEFAULT").".";
 								}
-								$skutotalCount = $optimusInstance->CheckTypeCount($arSKU["CATALOG_QUANTITY"]);
-								$arskuQuantityData = $optimusInstance->GetQuantityArray($skutotalCount, array('quantity-wrapp', 'quantity-indicators'));
+								$skutotalCount = COptimus::CheckTypeCount($arSKU["CATALOG_QUANTITY"]);
+								$arskuQuantityData = COptimus::GetQuantityArray($skutotalCount, array('quantity-wrapp', 'quantity-indicators'));
 								$arSKU["IBLOCK_ID"]=$arResult["IBLOCK_ID"];
 								$arSKU["IS_OFFER"]="Y";
-								$arskuAddToBasketData = $optimusInstance->GetAddToBasketArray($arSKU, $skutotalCount, $arParams["DEFAULT_COUNT"], $arParams["BASKET_URL"], false, array(), 'small w_icons', $arParams);
+								$arskuAddToBasketData = COptimus::GetAddToBasketArray($arSKU, $skutotalCount, $arParams["DEFAULT_COUNT"], $arParams["BASKET_URL"], false, array(), 'small w_icons', $arParams);
 								$arskuAddToBasketData["HTML"] = str_replace('data-item', 'data-props="'.$arOfferProps.'" data-item', $arskuAddToBasketData["HTML"]);
 								?>
 								<?$collspan = 1;?>
@@ -1426,7 +1430,7 @@ foreach($arResult["VIDEOS"] as $v)
 							<?
 							$i=1;
 							foreach($arFiles as $arItem):?>
-								<?$arFile=$optimusInstance->GetFileInfo($arItem);?>
+								<?$arFile=COptimus::GetFileInfo($arItem);?>
 								<div class="file_type clearfix <?=$arFile["TYPE"];?>">
 									<i class="icon"></i>
 									<div class="description">
@@ -1553,7 +1557,7 @@ foreach($arResult["VIDEOS"] as $v)
 				<?$APPLICATION->IncludeFile(SITE_DIR."include/additional_products_description.php", array(), array("MODE" => "html", "NAME" => GetMessage('CT_BCE_CATALOG_ADDITIONAL_DESCRIPTION')));?>
 			</li>
 		<?endif;?>
-        
+
 		<?if($arVideo):?>
 			<li class="<?=(!($iTab++) ? ' current' : '')?>">
 				<div class="video_block">
@@ -1579,7 +1583,7 @@ foreach($arResult["VIDEOS"] as $v)
 					<?endif;?>
 				</div>
 			</li>
-		<?endif;?>        
+		<?endif;?>
 	</ul>
 </div>
 

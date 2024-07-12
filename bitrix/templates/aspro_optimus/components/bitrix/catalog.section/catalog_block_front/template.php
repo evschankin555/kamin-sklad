@@ -104,10 +104,10 @@
 							<?endif;?>
 							<?=$arQuantityData["HTML"];?>
 							<div class="cost prices clearfix">
-								<?if( $arItem["OFFERS"]){?>
+								<?if(is_array($arItem["OFFERS"]) && count($arItem["OFFERS"]) > 0){?>
 									<?$minPrice = false;
 									if (isset($arItem['MIN_PRICE']) || isset($arItem['RATIO_PRICE'])){
-										// $minPrice = (isset($arItem['RATIO_PRICE']) ? $arItem['RATIO_PRICE'] : $arItem['MIN_PRICE']);
+                                        //$minPrice = (isset($arItem['RATIO_PRICE']) ? $arItem['RATIO_PRICE'] : $arItem['MIN_PRICE']);
 										$minPrice = $arItem['MIN_PRICE'];
 									}
 									$offer_id=0;
@@ -123,13 +123,28 @@
 									if('N' == $arParams['TYPE_SKU'] || $arParams['DISPLAY_TYPE'] !== 'block'){
 										$prefix = GetMessage("CATALOG_FROM");
 									}
-									if($arParams["SHOW_OLD_PRICE"]=="Y"){?>
+                                    $minPriceValue = null;  // Переменная для хранения минимальной цены
+                                    $minPricePrint = "";    // Переменная для хранения минимальной цены в печатном виде
+
+                                    foreach ($arItem["OFFERS"] as $offer) {
+                                        $basePrice = $offer['ITEM_PRICES'][0]['BASE_PRICE'];  // Базовая цена текущего предложения
+                                        $printBasePrice = $offer['ITEM_PRICES'][0]['PRINT_BASE_PRICE'];  // Печатная версия базовой цены
+
+                                        // Если $minPriceValue не установлен или текущая базовая цена меньше, обновляем минимальную цену
+                                        if ($minPriceValue === null || $basePrice < $minPriceValue) {
+                                            $minPriceValue = $basePrice;
+                                            $minPricePrint = $printBasePrice;
+                                        }
+                                    }
+
+                                    $minPrice["PRINT_DISCOUNT_VALUE"] = $minPricePrint;
+                                    if($arParams["SHOW_OLD_PRICE"]=="Y"){?>
 										<div class="price">
-											<?if(strlen($minPrice["PRINT_DISCOUNT_VALUE"])):?>
+											<?if(strlen($minPrice["PRINT_DISCOUNT_VALUE"])): ?>
 												<?=$prefix;?> <?=$minPrice["PRINT_DISCOUNT_VALUE"];?><?if (($arParams["SHOW_MEASURE"]=="Y") && $strMeasure):?><span class="price_measure">/<?=$strMeasure?></span><?endif;?>
 											<?endif;?>
 										</div>
-<?if(!$arItem["ISHIDEDISCOUNT"]){?>                                        
+<?if(!empty($arItem["ISHIDEDISCOUNT"])){?>
 										<div class="price discount">
 											<span <?=(!$minPrice["DISCOUNT_DIFF"] ? 'style="display:none;"' : '')?>><?=$minPrice["PRINT_VALUE"];?></span>
 										</div>
@@ -152,6 +167,7 @@
 								<?}elseif ( $arItem["PRICES"] ){?>
 									<? $arCountPricesCanAccess = 0;
 									$min_price_id=0;
+
 									foreach( $arItem["PRICES"] as $key => $arPrice ) { if($arPrice["CAN_ACCESS"]){$arCountPricesCanAccess++;} } ?>
 									<?foreach($arItem["PRICES"] as $key => $arPrice){?>
 										<?if($arPrice["CAN_ACCESS"]){

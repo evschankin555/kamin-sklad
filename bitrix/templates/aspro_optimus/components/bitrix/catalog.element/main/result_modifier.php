@@ -179,7 +179,7 @@ if('Y' !== $arParams['ADD_DETAIL_TO_SLIDER'] && $arResult['DETAIL_PICTURE']){
 $optimusInstance = new COptimus();
 
 // Вызываем метод через экземпляр класса
-$productSlider = $optimusInstance->getSliderForItemExt($arResult, $arParams['ADD_PICT_PROP'], 'Y' == $arParams['ADD_DETAIL_TO_SLIDER']);
+$productSlider = COptimus::getSliderForItemExt($arResult, $arParams['ADD_PICT_PROP'], 'Y' == $arParams['ADD_DETAIL_TO_SLIDER']);
 
 if(is_array($arResult['DISPLAY_PROPERTIES']["DRAWING"]["FILE_VALUE"]))
 {
@@ -355,7 +355,7 @@ if ($arResult['CATALOG'] && isset($arResult['OFFERS']) && !empty($arResult['OFFE
         $optimusInstance = new COptimus();
 
 // Вызываем метод через экземпляр класса
-        $offerSlider = $optimusInstance->getSliderForItemExt($arOffer, $arParams['OFFER_ADD_PICT_PROP'], true); // $arParams['ADD_DETAIL_TO_SLIDER'] == 'Y'
+        $offerSlider = COptimus::getSliderForItemExt($arOffer, $arParams['OFFER_ADD_PICT_PROP'], true); // $arParams['ADD_DETAIL_TO_SLIDER'] == 'Y'
 
 		$arOffer['MORE_PHOTO'] = $offerSlider;
 
@@ -514,10 +514,10 @@ if ($arResult['CATALOG'] && isset($arResult['OFFERS']) && !empty($arResult['OFFE
 
 
 // Вызываем методы через экземпляр класса
-            $totalCount = $optimusInstance->GetTotalCount($arOffer);
+            $totalCount = COptimus::GetTotalCount($arOffer);
             $arOffer['IS_OFFER'] = 'Y';
             $arOffer['IBLOCK_ID'] = $arResult['IBLOCK_ID'];
-            $arAddToBasketData = $optimusInstance->GetAddToBasketArray($arOffer, $totalCount, $arParams["DEFAULT_COUNT"], $arParams["BASKET_URL"], false, $arItemIDs["ALL_ITEM_IDS"], 'big_btn w_icons', $arParams);
+            $arAddToBasketData = COptimus::GetAddToBasketArray($arOffer, $totalCount, $arParams["DEFAULT_COUNT"], $arParams["BASKET_URL"], false, $arItemIDs["ALL_ITEM_IDS"], 'big_btn w_icons', $arParams);
             $arAddToBasketData["HTML"] = str_replace('data-item', 'data-props="'.$arOfferProps.'" data-item', $arAddToBasketData["HTML"]);
 
             if($arOffer['PRICES'])
@@ -551,7 +551,7 @@ if ($arResult['CATALOG'] && isset($arResult['OFFERS']) && !empty($arResult['OFFE
 				'CATALOG_SUBSCRIBE' => $arOffer['CATALOG_SUBSCRIBE'],
 				'SLIDER' => $arOffer['MORE_PHOTO'],
 				'SLIDER_COUNT' => $arOffer['MORE_PHOTO_COUNT'],
-				'AVAILIABLE' => $optimusInstance->GetQuantityArray($arOffer['CATALOG_QUANTITY'], array(), "Y"),
+				'AVAILIABLE' => COptimus::GetQuantityArray($arOffer['CATALOG_QUANTITY'], array(), "Y"),
 				'URL' => $arOffer['DETAIL_PAGE_URL'],
 				'CONFIG' => $arAddToBasketData,
 				'HTML' => $arAddToBasketData["HTML"],
@@ -575,7 +575,7 @@ if ($arResult['CATALOG'] && isset($arResult['OFFERS']) && !empty($arResult['OFFE
 	}
 	/*set min_price_id*/
 	if('TYPE_1' != $arParams['TYPE_SKU'] && $arResult['OFFERS'] ){
-		$arResult['MIN_PRICE'] = $optimusInstance->getMinPriceFromOffersExt(
+		$arResult['MIN_PRICE'] = COptimus::getMinPriceFromOffersExt(
 			$arResult['OFFERS'],
 			$boolConvert ? $arResult['CONVERT_CURRENCY']['CURRENCY_ID'] : $strBaseCurrency
 		);

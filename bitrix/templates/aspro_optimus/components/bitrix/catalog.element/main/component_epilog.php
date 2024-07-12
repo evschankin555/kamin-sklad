@@ -171,7 +171,7 @@ while ($ar_res = $db_res->Fetch())
 $discounts=md5($discounts);
 
 $arResult["strMainID"] = $this->GetEditAreaId($arResult['ID']);
-$arItemIDs=$optimusInstance->GetItemsIDs($arResult, "Y");
+$arItemIDs=COptimus::GetItemsIDs($arResult, "Y");
 ?>
 
 <div class="contmyold">

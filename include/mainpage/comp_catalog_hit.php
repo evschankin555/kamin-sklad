@@ -91,7 +91,7 @@
 		),
 		"DISPLAY_WISH_BUTTONS" => "Y",
 		"SHOW_DISCOUNT_PERCENT" => "N",
-		"SHOW_OLD_PRICE" => "Y",
+		"SHOW_OLD_PRICE" => "N",
 		"SHOW_RATING" => "Y",
 		"SALE_STIKER" => "SALE_TEXT",
 		"SHOW_DISCOUNT_TIME" => "N",

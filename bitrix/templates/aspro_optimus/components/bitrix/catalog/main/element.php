@@ -401,7 +401,7 @@ else
 						?>
 					<?}else{?>
 						<ul class="tabs_slider viewed_block_ <?=$code?>_slides wr">
-							<?$GLOBALS['arrFilter'.$code] = array( "ID" => $arAllValues[$code] ); ?>      
+							<?$GLOBALS['arrFilter'.$code] = array( "ID" => $arAllValues[$code] ); ?>
                             
 <?$APPLICATION->IncludeComponent(
 	"bitrix:catalog.section", 
