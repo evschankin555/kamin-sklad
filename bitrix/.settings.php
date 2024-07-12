@@ -42,7 +42,7 @@ return array (
   array (
     'value' => 
     array (
-      'debug' => true,
+      'debug' => false,
       'handled_errors_types' => 4437,
       'exception_errors_types' => 4437,
       'ignore_silence' => false,

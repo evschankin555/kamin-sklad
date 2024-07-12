@@ -175,10 +175,7 @@ if('Y' !== $arParams['ADD_DETAIL_TO_SLIDER'] && $arResult['DETAIL_PICTURE']){
 	// CIBlockPriceTools :: getSliderForItem() gibt ein Array DETAIL_PICTURE wenn WEITERE FOTOS leer, auch wenn ADD_DETAIL_TO_SLIDER == N
 	// unset($arResult['DETAIL_PICTURE']);
 }
-// Создаем экземпляр класса COptimus
-$optimusInstance = new COptimus();
 
-// Вызываем метод через экземпляр класса
 $productSlider = COptimus::getSliderForItemExt($arResult, $arParams['ADD_PICT_PROP'], 'Y' == $arParams['ADD_DETAIL_TO_SLIDER']);
 
 if(is_array($arResult['DISPLAY_PROPERTIES']["DRAWING"]["FILE_VALUE"]))
@@ -351,10 +348,9 @@ if ($arResult['CATALOG'] && isset($arResult['OFFERS']) && !empty($arResult['OFFE
 
 		$arOffer['MORE_PHOTO'] = array();
 		$arOffer['MORE_PHOTO_COUNT'] = 0;
-// Создаем экземпляр класса COptimus
-        $optimusInstance = new COptimus();
 
-// Вызываем метод через экземпляр класса
+
+
         $offerSlider = COptimus::getSliderForItemExt($arOffer, $arParams['OFFER_ADD_PICT_PROP'], true); // $arParams['ADD_DETAIL_TO_SLIDER'] == 'Y'
 
 		$arOffer['MORE_PHOTO'] = $offerSlider;
@@ -473,8 +469,6 @@ if ($arResult['CATALOG'] && isset($arResult['OFFERS']) && !empty($arResult['OFFE
 	$arPropsSKU=array();
 	$arOfferProps = implode(';', $arParams['OFFERS_CART_PROPERTIES']);
 
-    // Создаем экземпляр класса COptimus
-    $optimusInstance = new COptimus();
 	if('TYPE_1' == $arParams['TYPE_SKU'] && $arResult['OFFERS'] ){
 		foreach ($arResult['OFFERS'] as $keyOffer => $arOffer)
 		{
@@ -485,6 +479,10 @@ if ($arResult['CATALOG'] && isset($arResult['OFFERS']) && !empty($arResult['OFFE
 				// $arResult['MIN_PRICE'] = (isset($arOffer['RATIO_PRICE']) ? $arOffer['RATIO_PRICE'] : $arOffer['MIN_PRICE']);
 				$arResult['MIN_PRICE'] = $arOffer['MIN_PRICE'];
 				$arResult['MIN_BASIS_PRICE'] = $arOffer['MIN_PRICE'];
+                if(empty($arResult['MIN_PRICE']) && is_array($arOffer['ITEM_PRICES']) && count($arOffer['ITEM_PRICES']) > 0){
+                    $arResult['MIN_PRICE'] = $arOffer['ITEM_PRICES'][0]['PRICE'];
+                    $arResult['MIN_BASIS_PRICE'] = $arResult['MIN_PRICE'];
+                }
 			}
 			$arSKUProps = false;
 			if (!empty($arOffer['DISPLAY_PROPERTIES']))
@@ -574,7 +572,7 @@ if ($arResult['CATALOG'] && isset($arResult['OFFERS']) && !empty($arResult['OFFE
 		}
 	}
 	/*set min_price_id*/
-	if('TYPE_1' != $arParams['TYPE_SKU'] && $arResult['OFFERS'] ){
+	if('TYPE_1' != $arParams['TYPE_SKU'] && is_array($arResult['OFFERS']) && count($arResult['OFFERS']) > 0 ){
 		$arResult['MIN_PRICE'] = COptimus::getMinPriceFromOffersExt(
 			$arResult['OFFERS'],
 			$boolConvert ? $arResult['CONVERT_CURRENCY']['CURRENCY_ID'] : $strBaseCurrency
@@ -710,7 +708,6 @@ if($arParams["SHOW_KIT_PARTS"] == "Y"){
 		}
 	}
 	$arResultPrices = CIBlockPriceTools::GetCatalogPrices($arParams["IBLOCK_ID"], $arParams["PRICE_CODE"]);
-
 	$arSelect = Array("ID", "IBLOCK_ID", "NAME", "DETAIL_PAGE_URL", "PREVIEW_PICTURE", "DETAIL_PICTURE");
 	foreach($arResultPrices as &$value)
 	{
@@ -832,17 +829,16 @@ if ($arResult['MODULES']['currency']){
 }
 
 /*akc*/
-// Создаем экземпляр класса COptimusCache
-$optimusCacheInstance = new COptimusCache();
+
 if (intVal($arParams["IBLOCK_STOCK_ID"])){
     $arSelect = array("ID", "IBLOCK_ID", "IBLOCK_SECTION_ID", "NAME", "PREVIEW_PICTURE", "PREVIEW_TEXT", "DETAIL_PAGE_URL");
 
 
     // Получаем тег кеша
-    $cacheTag = $optimusCacheInstance->GetIBlockCacheTag($arParams["IBLOCK_STOCK_ID"]);
+    $cacheTag = COptimusCache::GetIBlockCacheTag($arParams["IBLOCK_STOCK_ID"]);
 
     // Вызываем метод CIBLockElement_GetList через экземпляр класса
-    $arResult["STOCK"] = $optimusCacheInstance->CIBLockElement_GetList(
+    $arResult["STOCK"] = COptimusCache::CIBLockElement_GetList(
         array('CACHE' => array("TAG" => $cacheTag)),
         array(
             "IBLOCK_ID" => $arParams["IBLOCK_STOCK_ID"],
@@ -861,10 +857,10 @@ if( !empty($arResult["PROPERTIES"]["SERVICES"]["VALUE"]) ){
     $arSelect = array("ID", "IBLOCK_ID", "IBLOCK_SECTION_ID", "NAME", "PREVIEW_PICTURE", "PREVIEW_TEXT", "DETAIL_PAGE_URL");
 
     // Получаем тег кеша
-    $cacheTag = $optimusCacheInstance->GetIBlockCacheTag($arResult["PROPERTIES"]["SERVICES"]["LINK_IBLOCK_ID"]);
+    $cacheTag = COptimusCache::GetIBlockCacheTag($arResult["PROPERTIES"]["SERVICES"]["LINK_IBLOCK_ID"]);
 
     // Вызываем метод CIBLockElement_GetList через экземпляр класса
-    $arResult["SERVICES"] = $optimusCacheInstance->CIBLockElement_GetList(
+    $arResult["SERVICES"] = COptimusCache::CIBLockElement_GetList(
         array('CACHE' => array("TAG" => $cacheTag)),
         array("IBLOCK_ID" => $arResult["PROPERTIES"]["SERVICES"]["LINK_IBLOCK_ID"], "ACTIVE" => "Y", "ACTIVE_DATE" => "Y", "ID" => $arResult["PROPERTIES"]["SERVICES"]["VALUE"]),
         false,
@@ -878,10 +874,10 @@ $arBrand = array();
 if(strlen($arResult["DISPLAY_PROPERTIES"]["BRAND"]["VALUE"]) && $arResult["PROPERTIES"]["BRAND"]["LINK_IBLOCK_ID"]){
 
     // Получаем тег кеша
-    $cacheTag = $optimusCacheInstance->GetIBlockCacheTag($arResult["PROPERTIES"]["BRAND"]["LINK_IBLOCK_ID"]);
+    $cacheTag = COptimusCache::GetIBlockCacheTag($arResult["PROPERTIES"]["BRAND"]["LINK_IBLOCK_ID"]);
 
     // Вызываем метод CIBLockElement_GetList через экземпляр класса
-    $arBrand = $optimusCacheInstance->CIBLockElement_GetList(
+    $arBrand = COptimusCache::CIBLockElement_GetList(
         array('CACHE' => array("MULTI" => "N", "TAG" => $cacheTag)),
         array("IBLOCK_ID" => $arResult["PROPERTIES"]["BRAND"]["LINK_IBLOCK_ID"], "ACTIVE" => "Y", "ID" => $arResult["DISPLAY_PROPERTIES"]["BRAND"]["VALUE"]),
         false,
@@ -904,8 +900,7 @@ if(strlen($arResult["DISPLAY_PROPERTIES"]["BRAND"]["VALUE"]) && $arResult["PROPE
 $arResult["BRAND_ITEM"] = $arBrand;
 
 /*stores product*/
-// Вызываем метод CCatalogStore_GetList через экземпляр класса
-$arStores = $optimusCacheInstance->CCatalogStore_GetList(array(), array("ACTIVE" => "Y"), false, false, array());
+$arStores = COptimusCache::CCatalogStore_GetList(array(), array("ACTIVE" => "Y"), false, false, array());
 $arResult["STORES_COUNT"] = count($arStores);
 
 

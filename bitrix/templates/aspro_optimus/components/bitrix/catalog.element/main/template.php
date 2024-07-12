@@ -462,7 +462,8 @@ setViewedProduct(<?=$arResult['ID']?>, <?=CUtil::PhpToJSObject($arViewedData, fa
 					<div class="cost prices clearfix">
 						<!-- OFFERS > 0 ? -->
                         <?php
-                        if (is_array($arResult["OFFERS"]) && count($arResult["OFFERS"]) > 0) {
+                        if (is_array($arResult["OFFERS"]) && count($arResult["OFFERS"]) > 0 || true) {
+
                             $minPrice = false;
 							$min_price_id=0;
 							if (isset($arResult['MIN_PRICE']) || isset($arResult['RATIO_PRICE'])){
@@ -482,7 +483,6 @@ setViewedProduct(<?=$arResult['ID']?>, <?=CUtil::PhpToJSObject($arViewedData, fa
 							if('N' == $arParams['TYPE_SKU'] || $arParams['DISPLAY_TYPE'] =='table' || empty($arResult['OFFERS_PROP'])){
 								$prefix=GetMessage("CATALOG_FROM");
 							}
-
 
 
 
@@ -525,6 +525,7 @@ setViewedProduct(<?=$arResult['ID']?>, <?=CUtil::PhpToJSObject($arViewedData, fa
 							<?
 							$arCountPricesCanAccess = 0;
 							$min_price_id=0;
+
 							foreach( $arResult["PRICES"] as $key => $arPrice ) { if($arPrice["CAN_ACCESS"]){$arCountPricesCanAccess++;} }?>
 							<?foreach($arResult["PRICES"] as $key => $arPrice){?>
 								<?if($arPrice["CAN_ACCESS"]){

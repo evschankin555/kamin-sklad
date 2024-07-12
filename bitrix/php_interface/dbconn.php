@@ -7,7 +7,7 @@ $DBHost = "a217442.mysql.mchost.ru";
 $DBLogin = "a217442_ks";
 $DBPassword = "49yQruJU7d";
 $DBName = "a217442_ks";
-$DBDebug = true;
+$DBDebug = false;
 $DBDebugToFile = false;
 
 define("DELAY_DB_CONNECT", true);
