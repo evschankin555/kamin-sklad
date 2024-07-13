@@ -7,7 +7,7 @@ $DBHost = "a217442.mysql.mchost.ru";
 $DBLogin = "a217442_ks";
 $DBPassword = "49yQruJU7d";
 $DBName = "a217442_ks";
-$DBDebug = false;
+$DBDebug = true;
 $DBDebugToFile = false;
 
 define("DELAY_DB_CONNECT", true);
@@ -31,5 +31,5 @@ define("BX_UTF", true);
 date_default_timezone_set("Etc/GMT-3");
 
 if(!(defined("CHK_EVENT") && CHK_EVENT===true))
-    define("BX_CRONTAB_SUPPORT", true);
+   define("BX_CRONTAB_SUPPORT", true);
 ?>

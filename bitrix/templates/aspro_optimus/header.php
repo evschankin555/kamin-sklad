@@ -24,20 +24,12 @@ require_once("include_area/location-session.php");
 	<?$APPLICATION->ShowMeta("SKYPE_TOOLBAR");?>
 	<?$APPLICATION->ShowHead();?>
 	<?$APPLICATION->AddHeadString('<script>BX.message('.CUtil::PhpToJSObject( $MESS, false ).')</script>', true);?>
-    <?php
-    if (CModule::IncludeModule("aspro.optimus")) {
-        $optimus = new COptimus();
-        $optimus->Start(SITE_ID);
-    }
-    ?>
+	<?if(CModule::IncludeModule("aspro.optimus")) {COptimus::Start(SITE_ID);}?>
 	<!--[if gte IE 9]><style type="text/css">.basket_button, .button30, .icon {filter: none;}</style><![endif]-->
     <link preload rel="stylesheet" href="<?=CMain::IsHTTPS() ? 'https' : 'http'?>://fonts.googleapis.com/css?family=Ubuntu:400,500,700,400italic&subset=latin,cyrillic&display=swap" type="text/css">
 <?
 
 $current_region_id = $_SESSION['CURRENT_LOCATION']['CURRENT']['ID'];
-$APPLICATION->AddHeadScript('/bitrix/js/aspro.optimus/jquery-1.8.3.min.js');
-$APPLICATION->AddHeadScript('/bitrix/js/aspro.optimus/jquery.keyboard.js');
-
   ?>
 
 <meta name="cmsmagazine" content="8b8f98ba6e95d71cf42e9faa2011c4a5" />
@@ -53,13 +45,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 		<div id="panel"><?$APPLICATION->ShowPanel();?></div>
 		<?if(!CModule::IncludeModule("aspro.optimus")){?><center><?$APPLICATION->IncludeFile(SITE_DIR."include/error_include_module.php");?></center></body></html><?die();?><?}?>
 		<?$APPLICATION->IncludeComponent("aspro:theme.optimus", ".default", array("COMPONENT_TEMPLATE" => ".default"), false);?>
-		<?
-        $optimus = new COptimus(); // Создаем объект класса COptimus
-
-        // Вызываем метод SetJSOptions() на объекте $optimus
-        $optimus->SetJSOptions();
-        ?>
-		<div class="wrapper <?=($optimus->getCurrentPageClass());?> basket_<?=strToLower($TEMPLATE_OPTIONS["BASKET"]["CURRENT_VALUE"]);?> <?=strToLower($TEMPLATE_OPTIONS["MENU_COLOR"]["CURRENT_VALUE"]);?> banner_auto">
+		<?COptimus::SetJSOptions();?>
+		<div class="wrapper <?=(COptimus::getCurrentPageClass());?> basket_<?=strToLower($TEMPLATE_OPTIONS["BASKET"]["CURRENT_VALUE"]);?> <?=strToLower($TEMPLATE_OPTIONS["MENU_COLOR"]["CURRENT_VALUE"]);?> banner_auto">
 			<div class="header_wrap <?=strtolower($TEMPLATE_OPTIONS["HEAD_COLOR"]["CURRENT_VALUE"])?>">
 				<?if($TEMPLATE_OPTIONS["BASKET"]["CURRENT_VALUE"]=="NORMAL"){?>
 					<div class="top-h-row">
@@ -162,16 +149,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 										global $USER;
 										if ($USER->IsAdmin() || in_array(10, $USER->GetUserGroupArray())) {
 										?>
-										                                    <a href="#" class="changeCity">
-                                                                                <?=$_SESSION['CURRENT_LOCATION']['CURRENT']["NAME"]?>
-                                                                                <i class="fa fa-chevron-down" aria-hidden="true"></i></a>
+										                                    <a href="#" class="changeCity"><?=$_SESSION['CURRENT_LOCATION']['CURRENT']["NAME"]?><i class="fa fa-chevron-down" aria-hidden="true"></i></a>
 										<? } else {
                                             /*	<span class="changeCity2"><?=$_SESSION['CURRENT_LOCATION']['CURRENT']["NAME"]?></span>*/
                                             ?>
                                             <a href="#" class="changeCity"><?=$_SESSION['CURRENT_LOCATION']['CURRENT']["NAME"]?>
                                                 <i class="fa fa-chevron-down" aria-hidden="true"></i></a>
 
-                                        <? } ?>
+										<? } ?>
 										</div>
 
 								</td>
@@ -309,7 +294,7 @@ if ($USER->IsAdmin()) {
 																	"AREA_FILE_SHOW" => "file",
 																	"AREA_FILE_SUFFIX" => "",
 																	"AREA_FILE_RECURSIVE" => "Y",
-                                                                    "CACHE_TYPE" => "Y",
+                                                                    "CACHE_TYPE" => "N",
                                                                     "CACHE_TIME" => "36000000",
                                                                     "CACHE_FILTER" => "Y",
                                                                     "CACHE_GROUPS" => "N",
@@ -412,9 +397,9 @@ if ($USER->IsAdmin()) {
 				</header>
 			</div>
 			<div class="wraps" id="content">
-				<div class="wrapper_inner <?=($optimus->IsMainPage() ? "front" : "");?> <?=(($optimus->IsOrderPage() || $optimus->IsBasketPage()) ? "wide_page" : "");?>">
+				<div class="wrapper_inner <?=(COptimus::IsMainPage() ? "front" : "");?> <?=((COptimus::IsOrderPage() || COptimus::IsBasketPage()) ? "wide_page" : "");?>">
 
-					<?if(!$optimus->IsOrderPage() && !$optimus->IsBasketPage() && $_SESSION['CURRENT_LOCATION']['CURRENT']['PAGE']!="Y"){?>
+					<?if(!COptimus::IsOrderPage() && !COptimus::IsBasketPage() && $_SESSION['CURRENT_LOCATION']['CURRENT']['PAGE']!="Y"){?>
 						<div class="left_block">
 <style>
     .catalog-left{
@@ -442,7 +427,7 @@ if ($USER->IsAdmin()) {
 									"EDIT_TEMPLATE" => "standard.php"
 								),
 								false
-							);?>
+							);?>					
 
 							<?$APPLICATION->ShowViewContent('left_menu');?>
 
@@ -568,7 +553,7 @@ if ($USER->IsAdmin()) {
 						<div class="right_block">
 					<?}?>          
 						<div class="<?if($_SESSION['CURRENT_LOCATION']['CURRENT']['PAGE']!="Y"){?>middle<?}?>">
-							<?if(!$optimus->IsMainPage()):?>
+							<?if(!COptimus::IsMainPage()):?>
 								<div class="container">
 									<?$APPLICATION->IncludeComponent("bitrix:breadcrumb", "optimus", array(
 										"START_FROM" => "0",

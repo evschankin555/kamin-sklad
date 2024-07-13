@@ -1,5 +1,25 @@
 <?
-session_start();
+
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+/*
+// Обработка GET-параметров для смены региона
+if (isset($_GET['changeloc']) && isset($_GET['city'])) {
+    $locationId = intval($_GET['changeloc']);
+    $city = htmlspecialchars($_GET['city']);
+
+    // Установите параметры в сессию
+    $_SESSION['CURRENT_LOCATION']['CURRENT'] = [
+        'NAME' => $city,
+        'ID' => $locationId
+    ];
+
+    // Перенаправьте на ту же страницу без параметров
+    header('Location: ' . strtok($_SERVER["REQUEST_URI"], '?'));
+    exit;
+}*/
+
 
 
 $eventManager = Bitrix\Main\EventManager::getInstance();
