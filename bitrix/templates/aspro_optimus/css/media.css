@@ -280,7 +280,7 @@ ul.tabs li.stretch { display: none; }
 	.basket_fly #header .middle-h-row .center_block .main-nav ul.menu { width: 100%; }
 	.basket_fly .wrapper_inner ul.menu .child { margin-top: 0px; }
 	.basket_fly .main-nav .search_middle_block { top: -100%; right: 65px; margin: -16px 0px 0px; width: 50%; }
-	body .top_slider_wrapp .flexslider .slides > li { background-size: 200% auto; }
+	body .top_slider_wrapp .flexslider .slides > li { background-size: 100% auto; }
 	body .wrapper .top_slider_wrapp .flexslider .slides > li, body .wrapper .top_slider_wrapp .flexslider .slides > li td, body .wrapper .top_slider_wrapp .flexslider { height: 300px !important; }
 	body .top_slider_wrapp .flex-direction-nav li { top: 120px; }
 	body .right_side.catalog { display: none; }
