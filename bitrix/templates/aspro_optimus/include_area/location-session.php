@@ -109,7 +109,7 @@ function fn_changeLocation(){
 	}*/
 }
 
-fn_changeLocation2();
+/*fn_changeLocation2();*/
 fn_changeLocation();
 //Debug::dump($arLocation, "arLocation:");
 if ($_SERVER["SERVER_NAME"]!="kamin-sklad.ru" && (COption::GetOptionString("main","redirectdomain")=="N" || $_SESSION["SESS_SEARCHER_ID"]==3 || $_SESSION["SESS_SEARCHER_ID"]==15 || $_SESSION["SESS_SEARCHER_ID"]==2 || $_SESSION["SESS_SEARCHER_ID"]==108 || $_SESSION["SESS_SEARCHER_ID"]==147 || $_SESSION["SESS_SEARCHER_ID"]==159 || $_SESSION["SESS_SEARCHER_ID"]==210))

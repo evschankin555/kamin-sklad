@@ -12,9 +12,11 @@ namespace WebPConvert\Convert\Converters\BaseTraits;
  * @author     Bjørn Rosell <it@rosell.dk>
  * @since      Class available since Release 2.0.0
  */
+
+
 trait WarningLoggerTrait
 {
-    abstract protected function logLn($msg, $style = '');
+    abstract public function logLn($msg, $style = '');
 
     /** @var string|array|null  Previous error handler (stored in order to be able pass warnings on) */
     private $previousErrorHandler;
