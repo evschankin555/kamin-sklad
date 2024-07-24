@@ -212,100 +212,135 @@ setViewedProduct(<?=$arResult['ID']?>, <?=CUtil::PhpToJSObject($arViewedData, fa
 				</div>
 			<?endif;?>
 
-			<?reset($arResult['MORE_PHOTO']);
+			<?
+            $arResult['MORE_VIDEO'] = [];
+            if (!empty($arResult['PROPERTIES']['MORE_VIDEO']['VALUE'])) {
+                foreach ($arResult['PROPERTIES']['MORE_VIDEO']['VALUE'] as $videoID) {
+                    $videoFile = CFile::GetFileArray($videoID);
+                    if ($videoFile) {
+                        $arResult['MORE_VIDEO'][] = array(
+                            'ID' => (int)$videoFile['ID'],
+                            'SRC' => $videoFile['SRC'],
+                            'THUMBNAIL' => $videoFile['SRC'], // Используем само видео как превью
+                            'DESCRIPTION' => $videoFile['DESCRIPTION'],
+                            'TITLE' => $videoFile['DESCRIPTION'],
+                        );
+                    }
+                }
+            }
+
+
+
+
+            reset($arResult['MORE_PHOTO']);
 			$arFirstPhoto = current($arResult['MORE_PHOTO']);
 			$viewImgType=$arParams["DETAIL_PICTURE_MODE"];?>
-			<div class="slides">
-				<?if($showCustomOffer && !empty($arResult['OFFERS_PROP'])){?>
-					<div class="offers_img wof">
-						<?$alt=$arFirstPhoto["ALT"];
-						$title=$arFirstPhoto["TITLE"];?>
-						<?if($arFirstPhoto["BIG"]["src"]){?>
-							<a href="<?=($viewImgType=="POPUP" ? $arFirstPhoto["BIG"]["src"] : "javascript:void(0)");?>" class="<?=($viewImgType=="POPUP" ? "popup_link" : "line_link");?>" title="<?=$title;?>">
-								<img id="<? echo $arItemIDs["ALL_ITEM_IDS"]['PICT']; ?>" src="<?=$arFirstPhoto['SMALL']['src']; ?>" <?=($viewImgType=="MAGNIFIER" ? 'data-large="" xpreview="" xoriginal=""': "");?> alt="<?=$alt;?>" title="<?=$title;?>" itemprop="image">
-							</a>
-						<?}else{?>
-							<a href="javascript:void(0)" class="" title="<?=$title;?>">
-								<img id="<? echo $arItemIDs["ALL_ITEM_IDS"]['PICT']; ?>" src="<?=$arFirstPhoto['SRC']; ?>" alt="<?=$alt;?>" title="<?=$title;?>" itemprop="image">
-							</a>
-						<?}?>
-					</div>
-				<?}else{
-					if($arResult["MORE_PHOTO"]){
-						$bMagnifier = ($viewImgType=="MAGNIFIER");?>
-						<ul>
-							<?foreach($arResult["MORE_PHOTO"] as $i => $arImage){
-								if($i && $bMagnifier):?>
-									<?continue;?>
-								<?endif;?>
-								<?$isEmpty=($arImage["SMALL"]["src"] ? false : true );?>
-								<?
-								$alt=$arImage["ALT"];
-								$title=$arImage["TITLE"];
-								?>
-								<li id="photo-<?=$i?>" <?=(!$i ? 'class="current"' : 'style="display: none;"')?>>
-									<?if(!$isEmpty){?>
-										<a href="<?=($viewImgType=="POPUP" ? $arImage["BIG"]["src"] : "javascript:void(0)");?>" <?=($bIsOneImage ? '' : 'data-fancybox-group="item_slider"')?> class="<?=($viewImgType=="POPUP" ? "popup_link fancy" : "line_link");?>" title="<?=$title;?>">
-											<img  src="<?=$arImage["SMALL"]["src"]?>" <?=($viewImgType=="MAGNIFIER" ? "class='zoom_picture'" : "");?> <?=($viewImgType=="MAGNIFIER" ? 'xoriginal="'.$arImage["BIG"]["src"].'" xpreview="'.$arImage["THUMB"]["src"].'"' : "");?> alt="<?=$alt;?>" title="<?=$title;?>"<?=(!$i ? ' itemprop="image"' : '')?>/>
-										</a>
-									<?}else{?>
-										<img  src="<?=$arImage["SRC"]?>" alt="<?=$alt;?>" title="<?=$title;?>" />
-									<?}?>
-								</li>
-							<?}?>
-						</ul>
-					<?}
-				}?>
-			</div>
-			<?/*thumbs*/?>
-			<?if(!$showCustomOffer || empty($arResult['OFFERS_PROP'])){
-            if (!empty($arResult["MORE_PHOTO"]) && is_array($arResult["MORE_PHOTO"])) :?>
-					<div class="wrapp_thumbs xzoom-thumbs">
-                        <?php
-                        $maxPhotos = 4; // Максимальное количество фотографий для отображения
-                        $photoCount = is_array($arResult['MORE_PHOTO']) ? count($arResult['MORE_PHOTO']) : 0;
-                        $maxWidth = $photoCount <= $maxPhotos ? $photoCount : $maxPhotos;
-                        $maxWidthPx = ceil($maxWidth * 64) - 10; // Рассчитываем максимальную ширину в пикселях
+            <div class="slides">
+                <?php if ($showCustomOffer && !empty($arResult['OFFERS_PROP'])) { ?>
+                    <div class="offers_img wof">
+                        <?php $alt = $arFirstPhoto["ALT"]; $title = $arFirstPhoto["TITLE"]; ?>
+                        <?php if ($arFirstPhoto["BIG"]["src"]) { ?>
+                            <a href="<?= ($viewImgType == "POPUP" ? $arFirstPhoto["BIG"]["src"] : "javascript:void(0)"); ?>" class="<?= ($viewImgType == "POPUP" ? "popup_link" : "line_link"); ?>" title="<?= $title; ?>">
+                                <img id="<?php echo $arItemIDs["ALL_ITEM_IDS"]['PICT']; ?>" src="<?= $arFirstPhoto['SMALL']['src']; ?>" <?= ($viewImgType == "MAGNIFIER" ? 'data-large="" xpreview="" xoriginal=""' : ""); ?> alt="<?= $alt; ?>" title="<?= $title; ?>" itemprop="image">
+                            </a>
+                        <?php } else { ?>
+                            <a href="javascript:void(0)" class="" title="<?= $title; ?>">
+                                <img id="<?php echo $arItemIDs["ALL_ITEM_IDS"]['PICT']; ?>" src="<?= $arFirstPhoto['SRC']; ?>" alt="<?= $alt; ?>" title="<?= $title; ?>" itemprop="image">
+                            </a>
+                        <?php } ?>
+                    </div>
+                <?php } else {
+                    if ($arResult["MORE_PHOTO"] || $arResult['PROPERTIES']["MORE_VIDEO"]) {
+                        $bMagnifier = ($viewImgType == "MAGNIFIER"); ?>
+                        <ul>
+                            <?php foreach ($arResult["MORE_PHOTO"] as $i => $arImage) {
+                                if ($i && $bMagnifier) continue; ?>
+                                <?php $isEmpty = ($arImage["SMALL"]["src"] ? false : true ); ?>
+                                <?php $alt = $arImage["ALT"]; $title = $arImage["TITLE"]; ?>
+                                <li id="photo-<?= $i ?>" <?= (!$i ? 'class="current"' : 'style="display: none;"') ?>>
+                                    <?php if (!$isEmpty) { ?>
+                                        <a href="<?= ($viewImgType == "POPUP" ? $arImage["BIG"]["src"] : "javascript:void(0)"); ?>" <?= ($bIsOneImage ? '' : 'data-fancybox-group="item_slider"') ?> class="<?= ($viewImgType == "POPUP" ? "popup_link fancy" : "line_link"); ?>" title="<?= $title; ?>">
+                                            <img src="<?= $arImage["SMALL"]["src"] ?>" <?= ($viewImgType == "MAGNIFIER" ? "class='zoom_picture'" : ""); ?> <?= ($viewImgType == "MAGNIFIER" ? 'xoriginal="' . $arImage["BIG"]["src"] . '" xpreview="' . $arImage["THUMB"]["src"] . '"' : ""); ?> alt="<?= $alt; ?>" title="<?= $title; ?>" <?= (!$i ? ' itemprop="image"' : '') ?> />
+                                        </a>
+                                    <?php } else { ?>
+                                        <img src="<?= $arImage["SRC"] ?>" alt="<?= $alt; ?>" title="<?= $title; ?>" />
+                                    <?php } ?>
+                                </li>
+                            <?php } ?>
 
-                        ?>
-                        <div class="thumbs flexslider"
-                             data-plugin-options='{"animation": "slide", "selector": ".slides_block > li", "directionNav": true, "itemMargin":10, "itemWidth": 54, "controlsContainer": ".thumbs_navigation", "controlNav" :false, "animationLoop": true, "slideshow": false}'
-                             style="max-width: <?= $maxWidthPx ?>px;">
-							<ul class="slides_block" id="thumbs">
-								<?foreach($arResult["MORE_PHOTO"]as $i => $arImage):?>
-									<li data-id="<?=$i?>" <?=(!$i ? 'class="current"' : '')?> data-big_img="<?=$arImage["BIG"]["src"]?>" data-small_img="<?=$arImage["SMALL"]["src"]?>">
-										<span><img class="xzoom-gallery" width="37" xpreview="<?=$arImage["THUMB"]["src"];?>" src="<?=$arImage["THUMB"]["src"]?>" alt="<?=$arImage["ALT"];?>" title="<?=$arImage["TITLE"];?>" /></span>
-									</li>
-								<?endforeach;?>
-							</ul>
-							<span class="thumbs_navigation custom_flex"></span>
-						</div>
-					</div>
-					<script>
-						$(document).ready(function(){
-							$('.item_slider .thumbs li').first().addClass('current');
-							$('.item_slider .thumbs').delegate('li:not(.current)', 'click', function(){
-								var i = $(this).data('id');
-								var li = $(this).parents('.item_slider').find('.slides li#photo-'+i);
-								$(li).addClass('current').show().siblings().removeClass('current');//.parents('.item_slider').find('.slides li').fadeOut(333);
-								$(this).addClass('current').siblings().removeClass('current');//.parents('.item_slider').find('.slides li').fadeOut(333);
-								//li.find('img').attr('src', $(this).data('small_img'));
-								//li.find('img').data('xoriginal', $(this).data('big_img'));
-//								li.find('.popup_link').attr('href', $(this).data('big_img'));
-							});
-						})
-					</script>
-				<?endif;?>
-			<?}else{?>
-				<div class="wrapp_thumbs">
-					<div class="sliders">
-						<div class="thumbs" style="">
-						</div>
-					</div>
-				</div>
-			<?}?>
-		</div>
-		<?/*mobile*/?>
+                            <?php foreach ($arResult["MORE_VIDEO"] as $i => $arVideo) { ?>
+                                <li id="video-<?= $i ?>" style="display: none;">
+                                    <video controls muted>
+                                        <source src="<?= $arVideo["SRC"]; ?>" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                </li>
+                            <?php } ?>
+                        </ul>
+                    <?php }
+                } ?>
+            </div>
+
+            <?php if (!$showCustomOffer || empty($arResult['OFFERS_PROP'])) {
+            if (!empty($arResult["MORE_PHOTO"]) && is_array($arResult["MORE_PHOTO"]) || !empty($arResult["MORE_VIDEO"]) && is_array($arResult["MORE_VIDEO"])) { ?>
+                <div class="wrapp_thumbs xzoom-thumbs">
+                    <?php
+                    $maxPhotos = 4; // Максимальное количество фотографий для отображения
+                    $photoCount = is_array($arResult['MORE_PHOTO']) ? count($arResult['MORE_PHOTO']) : 0;
+                    $videoCount = is_array($arResult['MORE_VIDEO']) ? count($arResult['MORE_VIDEO']) : 0;
+                    $totalCount = $photoCount + $videoCount;
+                    $maxWidth = $totalCount <= $maxPhotos ? $totalCount : $maxPhotos;
+                    $maxWidthPx = ceil($maxWidth * 64) - 10; // Рассчитываем максимальную ширину в пикселях
+                    ?>
+                    <div class="thumbs flexslider"
+                         data-plugin-options='{"animation": "slide", "selector": ".slides_block > li", "directionNav": true, "itemMargin":10, "itemWidth": 54, "controlsContainer": ".thumbs_navigation", "controlNav" :false, "animationLoop": true, "slideshow": false}'
+                         style="max-width: <?= $maxWidthPx ?>px;">
+                        <ul class="slides_block" id="thumbs">
+                            <?php foreach ($arResult["MORE_PHOTO"] as $i => $arImage) { ?>
+                                <li data-id="<?= $i ?>" <?= (!$i ? 'class="current"' : '') ?> data-big_img="<?= $arImage["BIG"]["src"] ?>" data-small_img="<?= $arImage["SMALL"]["src"] ?>">
+                                    <span><img class="xzoom-gallery" width="54" xpreview="<?= $arImage["THUMB"]["src"]; ?>" src="<?= $arImage["THUMB"]["src"] ?>" alt="<?= $arImage["ALT"]; ?>" title="<?= $arImage["TITLE"]; ?>" /></span>
+                                </li>
+                            <?php } ?>
+                            <?php foreach ($arResult["MORE_VIDEO"] as $i => $arVideo) { ?>
+                                <li data-id="<?= $i ?>" class="video-thumb">
+                                    <span><video class="xzoom-gallery" width="37" src="<?= $arVideo["SRC"]; ?>" alt="<?= $arVideo["TITLE"]; ?>" title="<?= $arVideo["TITLE"]; ?>" muted></video></span>
+                                </li>
+                            <?php } ?>
+                        </ul>
+                        <span class="thumbs_navigation custom_flex"></span>
+                    </div>
+                </div>
+                <script>
+                    $(document).ready(function(){
+                        $('.item_slider .thumbs li').first().addClass('current');
+                        $('.item_slider .thumbs').delegate('li:not(.current)', 'click', function(){
+                            var i = $(this).data('id');
+                            var li = $(this).hasClass('video-thumb')
+                                ? $(this).parents('.item_slider').find('.slides li#video-'+i)
+                                : $(this).parents('.item_slider').find('.slides li#photo-'+i);
+                            $(li).addClass('current').show().siblings().removeClass('current');
+                            $(this).addClass('current').siblings().removeClass('current');
+
+                            // Запускаем видео, если это видео
+                            if ($(this).hasClass('video-thumb')) {
+                                li.find('video')[0].play();
+                            }
+                        });
+                    });
+                </script>
+            <?php } ?>
+            <?php } else { ?>
+                <div class="wrapp_thumbs">
+                    <div class="sliders">
+                        <div class="thumbs" style="">
+                        </div>
+                    </div>
+                </div>
+            <?php } ?>
+        </div>
+
+
+        <?/*mobile*/?>
 		<?if(!$showCustomOffer || empty($arResult['OFFERS_PROP'])){?>
 			<div class="item_slider flex flexslider" data-plugin-options='{"animation": "slide", "directionNav": false, "animationLoop": false, "slideshow": true, "slideshowSpeed": 10000, "animationSpeed": 600}'>
 				<ul class="slides">
@@ -899,7 +934,6 @@ $offersCount = is_array($arResult['OFFERS']) ? count($arResult['OFFERS']) : 0;
 	if(strlen($arResult["SECTION_FULL"]["UF_VIDEO_YOUTUBE"])){
 		$arVideo[] = $arResult["SECTION_FULL"]["~UF_VIDEO_YOUTUBE"];
 	}
-
 foreach($arResult["VIDEOS"] as $v)
 {
 	$arVideo[] = $v;

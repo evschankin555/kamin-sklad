@@ -1840,6 +1840,7 @@ class COptimus{
                 }
             }
         }
+
         return $result;
     }
 
