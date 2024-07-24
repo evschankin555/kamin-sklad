@@ -904,8 +904,8 @@ foreach($arResult["VIDEOS"] as $v)
 {
 	$arVideo[] = $v;
 }
-	?>
-	<ul class="tabs1 main_tabs1 tabs-head">
+    ?>
+    <ul class="tabs1 main_tabs1 tabs-head">
 		<?$iTab = 0;?>
 		<?if($arResult["OFFERS"] && $arParams["TYPE_SKU"]=="N"):?>
 			<li class="prices_tab<?=(!($iTab++) ? ' current' : '')?>">
@@ -963,7 +963,12 @@ foreach($arResult["VIDEOS"] as $v)
 
 
             </li>
-	<?endif;?>
+	    <?endif;?>
+		<?if(isset($arResult["PROPERTIES"]['INSTRUCTION_PDF']['VALUE']) && !empty($arResult["PROPERTIES"]['INSTRUCTION_PDF']['VALUE'])):?>
+			<li class="pdf<?=(!($iTab++) ? ' current' : '')?>">
+				<span>Инструкция</span>
+            </li>
+	    <?endif;?>
 	</ul>
 	<?if($arResult["OFFERS"] && $arParams["TYPE_SKU"] !== "TYPE_1"):?>
 		<script>
@@ -1583,6 +1588,26 @@ foreach($arResult["VIDEOS"] as $v)
 						<?=$arVideo[0]?>
 					<?endif;?>
 				</div>
+			</li>
+		<?endif;?>
+        <?if(isset($arResult["PROPERTIES"]['INSTRUCTION_PDF']['VALUE']) && !empty($arResult["PROPERTIES"]['INSTRUCTION_PDF']['VALUE'])):?>
+			<li class="<?=(!($iTab++) ? ' current' : '')?>">
+                <?php
+                if (isset($arResult["PROPERTIES"]['INSTRUCTION_PDF']['VALUE'])) {
+                    $fileId = $arResult["PROPERTIES"]['INSTRUCTION_PDF']['VALUE'];
+                    $fileArray = CFile::GetFileArray($fileId);
+
+                    if ($fileArray) {
+                        $fileLink = $fileArray['SRC'];
+                        $fileName = $fileArray['ORIGINAL_NAME'];
+                        echo "<div>Скачать инструкцию : <a href='$fileLink' download='$fileLink'>$fileName</a></div>";
+                    } else {
+                        echo "Файл не найден.";
+                    }
+                } else {
+                    echo "Файл не задан.";
+                }
+                ?>
 			</li>
 		<?endif;?>
 	</ul>
