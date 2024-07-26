@@ -1634,7 +1634,30 @@ foreach($arResult["VIDEOS"] as $v)
                     if ($fileArray) {
                         $fileLink = $fileArray['SRC'];
                         $fileName = $fileArray['ORIGINAL_NAME'];
-                        echo "<div>Скачать инструкцию : <a href='$fileLink' download='$fileLink'>$fileName</a></div>";
+                        ?>
+
+                        <?$arFile=COptimus::GetFileInfo($fileId);?>
+                        <div class="file_type clearfix pdf">
+                            <i class="icon"></i>
+                            <div class="description">
+                                <a href="#" onclick="openPdfWindow('<?= $arFile['SRC']; ?>'); return false;">Инструкция</a>
+                                <span class="size"><?= GetMessage('CT_NAME_SIZE') ?>:
+            <?= $arFile["FILE_SIZE_FORMAT"]; ?>
+        </span>
+                            </div>
+                        </div>
+
+                        <script>
+                            function openPdfWindow(url) {
+                                const width = 1000;  // Максимальная ширина окна
+                                const height = 800;  // Максимальная высота окна
+                                const left = (screen.width - width) / 2;  // Расчет позиции по центру по горизонтали
+                                const top = (screen.height - height) / 2; // Расчет позиции по центру по вертикали
+                                window.open(url, '_blank', `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`);
+                            }
+                        </script>
+
+                <?php
                     } else {
                         echo "Файл не найден.";
                     }

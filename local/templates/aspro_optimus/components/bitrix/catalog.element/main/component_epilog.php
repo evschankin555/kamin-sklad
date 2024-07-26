@@ -54,7 +54,7 @@ echo "<!--SITE_SERVER_NAME: " . SITE_SERVER_NAME . '-->';
 					"IGNORE_CUSTOM_TEMPLATE" => "N",
 					"USE_EXTENDED_ERRORS" => "N",
 					"SEF_MODE" => "N",
-					"CACHE_TYPE" => "A",
+					"CACHE_TYPE" => "N",
 					"CACHE_TIME" => "3600000",
 					"LIST_URL" => "",
 					"EDIT_URL" => "",

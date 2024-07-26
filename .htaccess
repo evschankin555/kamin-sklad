@@ -49,13 +49,53 @@ RewriteRule ^(.*)$ / [R=301,L]
   Options +FollowSymLinks
   RewriteEngine On
 
-	#2018.09.25:
-	RewriteCond %{REQUEST_FILENAME} !-f
-	RewriteRule ^robots\.txt$ robots.php [NC,L]
-	
-	#2018.03.06:
-	RewriteCond %{SERVER_PORT} !^443$
-	RewriteRule .* https://%{SERVER_NAME}%{REQUEST_URI} [R=301,L]
+  # Разрешить Googlebot
+  RewriteCond %{HTTP_USER_AGENT} Googlebot [NC,OR]
+  # Разрешить Yandex
+  RewriteCond %{HTTP_USER_AGENT} Yandex [NC]
+  RewriteRule ^ - [L]
+
+  # Блокировать всех остальных ботов
+  RewriteCond %{HTTP_USER_AGENT} bot [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} crawler [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} spider [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} Baiduspider [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} bingbot [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} Slurp [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} DuckDuckBot [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} Exabot [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} Sogou [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} Facebot [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} facebookexternalhit [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} ia_archiver [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} megaindex [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} pchome [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} Paparazzi [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} robot [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} scrapper [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} SearchBot [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} sitebot [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} SISTRIX [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} spider [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} spiderbot [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} zyborg [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} MJ12bot [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} AhrefsBot [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} SemrushBot [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} Outbrain [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} CCBot [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} SiteAnalyzer [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} NetSpider [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} Yeti [NC]
+  RewriteRule ^ - [F]
+
+  #2018.09.25:
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^robots\.txt$ robots.php [NC,L]
+
+  #2018.03.06:
+  RewriteCond %{SERVER_PORT} !^443$
+  RewriteRule .* https://%{SERVER_NAME}%{REQUEST_URI} [R=301,L]
 
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-l
@@ -64,6 +104,8 @@ RewriteRule ^(.*)$ / [R=301,L]
   RewriteRule ^(.*)$ /bitrix/urlrewrite.php [L]
   RewriteRule .* - [E=REMOTE_USER:%{HTTP:Authorization}]
 </IfModule>
+
+
 
 <IfModule mod_dir.c>
   DirectoryIndex index.php index.html
