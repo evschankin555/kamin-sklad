@@ -22,10 +22,10 @@ echo "<!--SITE_SERVER_NAME: " . SITE_SERVER_NAME . '-->';
 					"bitrix:forum.topic.reviews",
 					"main",
 					Array(
-						"CACHE_TYPE" => $arParams["CACHE_TYPE"],
+						"CACHE_TYPE" => "N",
 						"CACHE_TIME" => $arParams["CACHE_TIME"],
 						"MESSAGES_PER_PAGE" => $arParams["MESSAGES_PER_PAGE"],
-						"USE_CAPTCHA" => $arParams["USE_CAPTCHA"],
+						"USE_CAPTCHA" => "Y",
 						"FORUM_ID" => $arParams["FORUM_ID"],
 						"ELEMENT_ID" => $arResult["ID"],
 						"IBLOCK_ID" => $arParams["IBLOCK_ID"],
