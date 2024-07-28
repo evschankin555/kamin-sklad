@@ -1,1 +1,0 @@
-<a href="/company/snizim-tsenu/">Нашли дешевле<br />– снизим цену!</a>

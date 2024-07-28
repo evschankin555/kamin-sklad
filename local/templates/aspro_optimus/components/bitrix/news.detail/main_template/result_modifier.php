@@ -1,1 +1,0 @@
-<?$this->__component->arResultCacheKeys = array_merge($this->__component->arResultCacheKeys, array('ID', 'NAME', 'LIST_PAGE_URL', 'DISPLAY_PROPERTIES', 'TAGS'));?>

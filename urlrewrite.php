@@ -24,6 +24,14 @@ $arUrlRewrite=array (
     'PATH' => '/desktop_app/router.php',
     'SORT' => 100,
   ),
+  26 => 
+  array (
+    'CONDITION' => '#^/video/([\\.\\-0-9a-zA-Z]+)(/?)([^/]*)#',
+    'RULE' => 'alias=$1&videoconf',
+    'ID' => 'bitrix:im.router',
+    'PATH' => '/desktop_app/router.php',
+    'SORT' => 100,
+  ),
   3 => 
   array (
     'CONDITION' => '#^(\\/(?:[^\\.]+)\\.htm)\\?{0,1}(.*)$#',
@@ -104,14 +112,6 @@ $arUrlRewrite=array (
     'PATH' => '/sale/actions/index.php',
     'SORT' => 100,
   ),
-  15 => 
-  array (
-    'CONDITION' => '#^/info/article/#',
-    'RULE' => '',
-    'ID' => 'bitrix:news',
-    'PATH' => '/info/article/index.php',
-    'SORT' => 100,
-  ),
   14 => 
   array (
     'CONDITION' => '#^/company/news/#',
@@ -126,6 +126,14 @@ $arUrlRewrite=array (
     'RULE' => '',
     'ID' => 'bitrix:catalog',
     'PATH' => '/catalog_test/index.php',
+    'SORT' => 100,
+  ),
+  15 => 
+  array (
+    'CONDITION' => '#^/info/article/#',
+    'RULE' => '',
+    'ID' => 'bitrix:news',
+    'PATH' => '/info/article/index.php',
     'SORT' => 100,
   ),
   16 => 

@@ -1,0 +1,15 @@
+<?
+$PERM["sotbit.seometa_sitemap_edit.php"]["9"]="X";
+$PERM["sotbit.seometa_sitemap_edit.php"]["10"]="R";
+$PERM["sotbit.seometa_sitemap_run.php"]["9"]="X";
+$PERM["sotbit.seometa_sitemap_run.php"]["10"]="W";
+$PERM["sotbit.seometa_sitemap_list.php"]["9"]="X";
+$PERM["sotbit.seometa_sitemap_list.php"]["10"]="X";
+$PERM["sotbit.seometa_autogeneration_edit.php"]["10"]="R";
+$PERM["seo_search_yandex_direct_edit.php"]["7"]="X";
+$PERM["seo_search_yandex_direct_edit.php"]["8"]="D";
+$PERM["seo_search_yandex_direct_edit.php"]["*"]="D";
+$PERM["seo_search_yandex_direct.php"]["7"]="X";
+$PERM["seo_search_yandex_direct.php"]["8"]="D";
+$PERM["seo_search_yandex_direct.php"]["*"]="D";
+?>
