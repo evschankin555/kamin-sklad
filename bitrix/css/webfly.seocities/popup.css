@@ -1,0 +1,29 @@
+.region{
+    cursor:pointer;
+    position:relative;
+}
+.region:hover .select-city{
+    opacity:1;
+    transition: 0.5s linear;
+}
+.region:not(:hover) .select-city{
+    opacity:0;
+    transition: 0.3s linear;
+}
+.select-city{
+    position:absolute;
+    opacity:1;
+    z-index: 1000;
+    background:#ffffff;
+    box-shadow: 0 2px 3px rgba(0,0,0,0.5);
+    padding: 12px;
+    min-width: 80px;
+    margin-left: 60px;
+}
+.select-city a{
+    display: block;
+    padding-bottom:5px;
+}
+.select-city :last-child {
+    padding-bottom:0;
+}

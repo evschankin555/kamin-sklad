@@ -1,0 +1,8 @@
+.tag ul { list-style: none; }
+.tag li {
+			display: inline-block;
+			margin: 20px 20px 0 0 !important; 
+			list-style: none;
+			padding: 0px !important;
+}
+.tag li:before { display: none !important; }

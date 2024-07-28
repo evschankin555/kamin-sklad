@@ -1,3 +1,6 @@
 /bitrix/cache/
 /bitrix/managed_cache/
 /bitrix/modules/
+/bitrix/components/
+/bitrix/js/
+/bitrix/wizards/
